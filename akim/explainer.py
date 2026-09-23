@@ -210,8 +210,10 @@ def _ask_model(f: dict) -> dict:
         [{"role": "system", "content": SYSTEM_PROMPT},
          {"role": "user", "content": json.dumps(f, ensure_ascii=False)}],
         json_mode=True,
-        model=os.getenv("OPENAI_EXPLAIN_MODEL", "gpt-5-mini"),
-        max_completion_tokens=350,
+        # Замер 23.09 живым ключом, весь разбор со сверкой чисел: gpt-4.1-mini 3,0 с, gpt-5-mini 4,7 с,
+        # gpt-5.6-sol 10,7 с. Ответ — ~900 токенов: при потолке 350 JSON обрывался и шёл шаблон.
+        model=os.getenv("OPENAI_EXPLAIN_MODEL") or "gpt-4.1-mini",
+        max_completion_tokens=1500,
         reasoning_effort="none",
     )
     payload = json.loads(reply.choices[0].message.content)

@@ -98,7 +98,7 @@ def test_explainer_disables_reasoning_by_default(monkeypatch):
 
     monkeypatch.setattr(explainer.llm, "complete", complete)
     explainer._ask_model({"score": 56.54})
-    assert seen["model"] == "gpt-5-mini"
+    assert seen["model"] == "gpt-4.1-mini"
     assert seen["json_mode"] is True
-    assert seen["max_completion_tokens"] == 350
+    assert seen["max_completion_tokens"] == 1500
     assert seen["reasoning_effort"] == "none"
