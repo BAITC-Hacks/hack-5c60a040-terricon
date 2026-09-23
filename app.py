@@ -377,3 +377,92 @@ with chat_col:
     if prompt:
         _submit_chat(prompt)
         st.rerun()
+
+st.divider()
+st.header("Сравнение и выбор сценария")
+comparison_col, top_col = st.columns([1, 1.25], gap="large")
+
+with comparison_col:
+    st.subheader("Сравнение с вариантом A")
+    if st.button("Запомнить как A", key="remember_a", disabled=not result["valid"]):
+        st.session_state["comparison_a"] = [item.copy() for item in st.session_state["plan"]]
+        st.success("Текущий сценарий сохранён как вариант A.")
+
+    comparison_a = st.session_state.get("comparison_a")
+    if comparison_a:
+        comparison = akim.compare(comparison_a, st.session_state["plan"])
+        if comparison["a"]["valid"] and comparison["b"]["valid"]:
+            a_col, current_col, diff_col = st.columns(3)
+            a_col.metric("Вариант A", f"{comparison['a']['score']:.2f}")
+            current_col.metric("Текущий", f"{comparison['b']['score']:.2f}")
+            diff_col.metric("Текущий − A", f"{comparison['score_diff']:+.2f}")
+            st.table(
+                [
+                    {
+                        "Район": district["name"],
+                        "D варианта A": district["d_a"],
+                        "D текущего": district["d_b"],
+                        "Разница": district["diff"],
+                    }
+                    for district in comparison["districts"]
+                ]
+            )
+            if comparison["only_in_a"]:
+                st.caption("Только в A: " + _plan_caption(comparison["only_in_a"], measure_by_id))
+            if comparison["only_in_b"]:
+                st.caption("Только в текущем: " + _plan_caption(comparison["only_in_b"], measure_by_id))
+        else:
+            st.warning("Текущий сценарий недопустим — исправьте его для сравнения с вариантом A.")
+    else:
+        st.caption("Сохраните допустимый сценарий, затем измените набор и сравните результаты.")
+
+with top_col:
+    st.subheader("Топ-5 сценариев")
+    for place, top_plan in enumerate(akim.top(5), start=1):
+        with st.container(border=True):
+            metric_col, budget_col = st.columns(2)
+            metric_col.metric(f"Топ {place}", f"{top_plan['score']:.2f}")
+            budget_col.metric("Бюджет", str(top_plan["cost"]))
+            st.caption(_plan_caption(top_plan["plan"], measure_by_id))
+            st.button(
+                "Взять этот набор",
+                key=f"take_top_{place - 1}",
+                on_click=_apply_plan,
+                args=(top_plan["plan"],),
+            )
+
+st.divider()
+st.header("Утверждение сценария")
+st.caption("Агент готовит варианты, но итоговое решение фиксирует управленец.")
+
+if st.button(
+    "Утвердить сценарий",
+    key="approve_plan",
+    type="primary",
+    disabled=not result["valid"],
+):
+    try:
+        st.session_state["latest_approval"] = akim.approve(st.session_state["plan"])
+    except ValueError as error:
+        st.error(str(error))
+
+latest_approval = st.session_state.get("latest_approval")
+if latest_approval:
+    st.success(
+        f"Сценарий утверждён {latest_approval['approved_at']} · "
+        f"Score {latest_approval['score']:.2f}"
+    )
+
+approved_plans = akim.approved()
+st.subheader("История утверждений")
+if approved_plans:
+    for approval_index, approval in enumerate(approved_plans, start=1):
+        with st.expander(
+            f"{approval_index}. {approval['approved_at']} · Score {approval['score']:.2f} · "
+            f"бюджет {approval['budget_used']}"
+        ):
+            st.write(_plan_caption(approval["plan"], measure_by_id))
+            if approval.get("note"):
+                st.caption(approval["note"])
+else:
+    st.caption("Утверждённых сценариев пока нет.")
