@@ -88,7 +88,6 @@ def test_model_answer_with_real_numbers_is_accepted(monkeypatch):
 
 def test_explainer_disables_reasoning_by_default(monkeypatch):
     monkeypatch.delenv("OPENAI_EXPLAIN_MODEL", raising=False)
-    monkeypatch.setattr(explainer.llm, "model_name", lambda: "gpt-5.6-sol")
     seen = {}
 
     def complete(messages, **kwargs):
@@ -99,7 +98,7 @@ def test_explainer_disables_reasoning_by_default(monkeypatch):
 
     monkeypatch.setattr(explainer.llm, "complete", complete)
     explainer._ask_model({"score": 56.54})
-    assert seen["model"] == "gpt-5.6-sol"
+    assert seen["model"] == "gpt-5-mini"
     assert seen["json_mode"] is True
     assert seen["max_completion_tokens"] == 350
     assert seen["reasoning_effort"] == "none"

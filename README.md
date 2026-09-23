@@ -154,7 +154,7 @@ flowchart LR
 ## Технологии
 
 Python 3.11+ · Streamlit · NumPy · OpenAI Python SDK (по желанию) · pytest.
-Модели OpenAI (только с ключом): `gpt-5.6-sol` — агент и чат; `gpt-4o-mini` — короткий структурированный
+Модели OpenAI (только с ключом): `gpt-5.6-sol` — агент и чат; `gpt-5-mini` — короткий структурированный
 разбор сценария; `gpt-4o-mini-transcribe` — распознавание речи.
 Оформление — цвета государственного флага Казахстана: небесно-голубой (Pantone 3125) и золотой.
 
@@ -188,7 +188,7 @@ docker run --rm -p 8501:8501 akim
 | --- | --- | --- |
 | `OPENAI_API_KEY` | текст разбора моделью и голос | не задан — работает шаблон |
 | `OPENAI_MODEL` | основная модель агента и чата | `gpt-5.6-sol` |
-| `OPENAI_EXPLAIN_MODEL` | отдельная быстрая модель для разбора сценария | `gpt-4o-mini` |
+| `OPENAI_EXPLAIN_MODEL` | отдельная быстрая модель для разбора сценария (`reasoning_effort="none"`) | `gpt-5-mini` |
 | `OPENAI_REASONING_EFFORT` | глубина рассуждения модели | `low` |
 | `OPENAI_STT_MODEL` | модель распознавания речи | `gpt-4o-mini-transcribe` |
 | `OPENAI_TIMEOUT_SECONDS` | сколько секунд ждать ответа модели | `30` |

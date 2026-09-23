@@ -210,7 +210,7 @@ def _ask_model(f: dict) -> dict:
         [{"role": "system", "content": SYSTEM_PROMPT},
          {"role": "user", "content": json.dumps(f, ensure_ascii=False)}],
         json_mode=True,
-        model=os.getenv("OPENAI_EXPLAIN_MODEL", llm.model_name()),
+        model=os.getenv("OPENAI_EXPLAIN_MODEL", "gpt-5-mini"),
         max_completion_tokens=350,
         reasoning_effort="none",
     )
