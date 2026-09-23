@@ -1,4 +1,5 @@
 import os
+import re
 
 import akim
 import akim.approvals as approvals
@@ -25,12 +26,16 @@ def test_example_plan_shows_budget_validity_and_result():
     assert any("95 из 100" in progress.proto.text for progress in app.get("progress"))
     assert any(message.value == "Набор допустим" for message in app.success)
 
-    score = next(metric for metric in app.metric if metric.label == "Astana Quality of Life Score")
-    weakest = next(metric for metric in app.metric if metric.label == "Самый слабый район")
-    assert score.value == "56.54"
-    assert "+3.98" in score.delta
+    score = next(
+        metric
+        for metric in app.metric
+        if metric.label == "Индекс качества жизни (Astana Quality of Life Score)"
+    )
+    weakest = next(metric for metric in app.metric if metric.label == "Отстающий район")
+    assert score.value == "56,54"
+    assert "+3,98" in score.delta
     assert weakest.value == "Нура"
-    assert "49.18 → 52.96" in weakest.delta
+    assert "52,96 из 100" in weakest.delta
 
 
 def test_over_budget_plan_shows_engine_error():
@@ -43,6 +48,11 @@ def test_over_budget_plan_shows_engine_error():
 
     errors = [message.value for message in app.error]
     assert any(message.startswith("Бюджет превышен: 127 из 100") for message in errors)
+    assert any(
+        "Сценарий нельзя принять:" in item.value
+        and "Бюджет превышен: 127 из 100" in item.value
+        for item in app.markdown
+    )
     assert not app.exception
 
 
@@ -50,7 +60,10 @@ def test_agent_explanation_and_improvement_require_explicit_apply():
     app = _app()
     original_plan = [item.copy() for item in app.session_state["plan"]]
 
-    assert any("шаблон (без ключа)" in caption.value for caption in app.caption)
+    assert any(
+        caption.value == "Разбор составлен по расчётам движка"
+        for caption in app.caption
+    )
     next(button for button in app.button if button.label == "Улучшить сценарий").click().run()
 
     improvement = app.session_state["improvement"]
@@ -80,7 +93,10 @@ def test_mission_shows_retry_recommendation_and_price_of_constraints():
     assert mission["retried"] is True
     assert len(checker_steps) == 2
     assert app.status
-    assert any("Цена ваших условий" == metric.label and metric.value == "0.46 балла" for metric in app.metric)
+    assert any(
+        "Цена ваших условий" == metric.label and metric.value == "0,46 балла"
+        for metric in app.metric
+    )
 
     app.button(key="mission_apply").click().run()
     assert "mission_result" not in app.session_state
@@ -106,8 +122,8 @@ def test_top_five_and_take_plan_sync_all_widget_keys():
     app = _app()
     top_plan = akim.top(1)[0]
 
-    top_metric = next(metric for metric in app.metric if metric.label == "Топ 1")
-    assert top_metric.value == "57.24"
+    top_metric = next(metric for metric in app.metric if metric.label == "Место 1")
+    assert top_metric.value == "57,24"
     app.button(key="improve_plan").click().run()
     assert "improvement" in app.session_state
     app.button(key="take_top_0").click().run()
@@ -118,8 +134,12 @@ def test_top_five_and_take_plan_sync_all_widget_keys():
         assert app.session_state[f"measure_{index}"] == item["measure"]
         if item["district"] is not None:
             assert app.session_state[f"district_{index}"] == item["district"]
-    score = next(metric for metric in app.metric if metric.label == "Astana Quality of Life Score")
-    assert score.value == "57.24"
+    score = next(
+        metric
+        for metric in app.metric
+        if metric.label == "Индекс качества жизни (Astana Quality of Life Score)"
+    )
+    assert score.value == "57,24"
     assert not _has_callback_rerun_warning(app)
     assert not app.exception
 
@@ -132,10 +152,10 @@ def test_remember_a_and_compare_with_current_plan():
     assert app.session_state["comparison_a"] == original_plan
     app.button(key="take_top_0").click().run()
 
-    score_a = next(metric for metric in app.metric if metric.label == "Вариант A")
+    score_a = next(metric for metric in app.metric if metric.label == "Вариант А")
     score_current = next(metric for metric in app.metric if metric.label == "Текущий")
-    assert score_a.value == "56.54"
-    assert score_current.value == "57.24"
+    assert score_a.value == "56,54"
+    assert score_current.value == "57,24"
     assert not app.exception
 
 
@@ -153,7 +173,7 @@ def test_approve_uses_store_and_lists_approved_plan(monkeypatch, tmp_path):
     assert len(approved) == 1
     assert approved[0]["score"] == 56.54
     assert app.session_state["latest_approval"]["score"] == 56.54
-    assert any("Score 56.54" in message.value for message in app.success)
+    assert any("индекс 56,54" in message.value for message in app.success)
     assert app.expander
     assert not app.exception
 
@@ -198,6 +218,9 @@ def test_explanation_is_cached_until_plan_changes(monkeypatch):
 def test_v5_target_search_respects_budget_and_passport_downloads():
     app = _app()
     assert [tab.label for tab in app.tabs] == [
+        "1. Сценарий",
+        "2. Совет агента",
+        "3. Сравнить и утвердить",
         "Подбор под цель",
         "Районы",
         "Городские события",
@@ -220,12 +243,52 @@ def test_v5_target_search_respects_budget_and_passport_downloads():
 
 def test_v5_district_report_and_city_event():
     app = _app()
-    district_score = next(metric for metric in app.metric if metric.label == "D района")
-    assert district_score.value == "63.43"
+    district_score = next(metric for metric in app.metric if metric.label == "Индекс района")
+    assert district_score.value == "63,43"
 
     app.button(key="stress_test").click().run()
     stress = app.session_state["stress_result"]
     assert stress["event"]["id"] == "smog"
     assert stress["score_before"] == 56.54
-    assert any(metric.label == "Score после события" for metric in app.metric)
+    assert any(metric.label == "Индекс после события" for metric in app.metric)
+    assert not app.exception
+
+
+def test_v7_first_screen_uses_plain_language_and_full_names():
+    app = _app()
+
+    main = next(item.value for item in app.markdown if "Ваш сценарий поднимает" in item.value)
+    assert "56,54" in main
+    assert "Нура" in main
+    assert "Потрачено 95 из 100" in main
+
+    first_measure = _selectbox(app, "measure_0")
+    assert first_measure.label == "Решение 1"
+    assert "Школа + детсад (модульное строительство) — 24 из 100" in first_measure.options
+    assert any(
+        caption.value
+        == "Соцсфера · школы и детсады +16 · заработает через 3 квартала"
+        for caption in app.caption
+    )
+
+    district_table = next(
+        item.value for item in app.markdown if 'class="district-table"' in item.value
+    )
+    assert "Школы и детсады" in district_table
+    assert "Качество воздуха" in district_table
+    assert "Индекс района" in district_table
+
+    visible = " ".join(
+        [item.value for item in app.markdown[1:]]
+        + [item.value for item in app.caption]
+        + [item.value for item in app.success]
+        + [item.value for item in app.info]
+        + [item.value for item in app.warning]
+        + [item.label for item in app.selectbox]
+        + [option for item in app.selectbox for option in item.options]
+    )
+    assert "M7 ·" not in visible
+    assert "T1" not in visible
+    assert re.search(r"\bлаг\b", visible) is None
+    assert " ед." not in visible
     assert not app.exception
