@@ -240,10 +240,32 @@ These are measurements from the team’s comparison, not guaranteed response tim
 
 ## Installation and launch
 
-Without Docker:
+Without Docker, first create an isolated environment with Python 3.11 or newer:
 
 ```bash
-pip install -r requirements.txt
+python -m venv .venv
+```
+
+Activate it in Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Or in macOS/Linux:
+
+```bash
+source .venv/bin/activate
+```
+
+Install and validate the dependencies, then launch the application:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip check
+python scripts/check_scenario.py
+python -m pytest -q
 python -m streamlit run app.py
 ```
 

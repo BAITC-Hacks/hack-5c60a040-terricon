@@ -241,10 +241,32 @@ Python 3.11+ · Streamlit · NumPy · OpenAI Python SDK (по желанию) ·
 
 ## Установка и запуск
 
-Без Docker:
+Без Docker сначала создайте отдельное окружение (Python 3.11+):
 
 ```bash
-pip install -r requirements.txt
+python -m venv .venv
+```
+
+Активируйте его в Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Или в macOS/Linux:
+
+```bash
+source .venv/bin/activate
+```
+
+Установите и проверьте зависимости, затем запустите приложение:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip check
+python scripts/check_scenario.py
+python -m pytest -q
 python -m streamlit run app.py
 ```
 
