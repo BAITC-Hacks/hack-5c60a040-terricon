@@ -139,6 +139,8 @@ def test_page_has_every_feature_and_clean_text(url):
     assert not missing, f"на экране нет: {missing}"
     assert not re.search(r"\?{4,}", page), "кириллица испорчена знаками «????»"
     assert "Альтернативный" not in page and "прототип" not in page
+    # как на старом экране: в списке мер — цена, значок направления и «весь город» у городских мер
+    assert "fmt(o.cost,0)+' · '" in page and "' · весь город'" in page
 
 
 def test_plain_words_for_tool_names_numbers_and_codes(url):
