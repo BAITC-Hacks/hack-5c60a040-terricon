@@ -75,6 +75,8 @@ def test_event_search_and_chat_mission_follow_current_conditions(monkeypatch, tm
     app.chat_input(key="chat_prompt").set_value("Улучши, но не ухудшай качество воздуха в Сарыарке").run()
     assert any("Как агент работал" in e.label for e in app.expander)
     assert [b for b in app.button if b.key.startswith("chat_apply_")]
+    app.selectbox(key="district_4").set_value("Есиль").run()
+    assert not [b for b in app.button if b.key.startswith("chat_apply_")]
     assert not app.exception
 
 

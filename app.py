@@ -104,7 +104,8 @@ PLAIN_WORDS = [
 def plain(text: str) -> str:
     """Тексты движка — простыми словами: без «Score», «лаг», «критические значения» и кодов мер вроде M7."""
     text = re.sub(r"лаг (\d+) кв\.", lambda match: quarters(int(match.group(1))), str(text))
-    text = re.sub(r"(\d)\.(\d)", r"\1,\2", text)  # модель пишет 56.54 — на экране 56,54, как в расчётах
+    # модель пишет 56.54 — на экране 56,54, как в расчётах; даты вида 23.09.2026 не трогаем
+    text = re.sub(r"(?<![\d.])(\d+)\.(\d{1,2})(?!\d|\.\d)", r"\1,\2", text)
     text = re.sub(r"\bM\d{1,2}\b", lambda match: f"«{measure_by_id[match.group(0)]['name']}»"
                   if match.group(0) in measure_by_id else match.group(0), text)
     for old, new in PLAIN_WORDS:
@@ -481,7 +482,7 @@ with tab_agent:
             answer = akim.chat(question, plan, history)
             st.session_state["chat_history"] += [
                 {"role": "user", "content": question},
-                {"role": "assistant", "content": answer["reply"], "response": answer},
+                {"role": "assistant", "content": answer["reply"], "response": answer, "plan": plan_key(plan)},
             ]
         for number, message in enumerate(st.session_state["chat_history"][-6:]):
             with st.chat_message(message["role"]):
@@ -493,7 +494,8 @@ with tab_agent:
                     with st.expander("Как агент работал — шаги по порядку"):
                         for step in response["mission"]["steps"]:
                             st.markdown(f"**{step['role']}** — {plain(step['action'])}: {plain(step['result'])}")
-                if response and response.get("suggestion"):
+                # Кнопка — только пока набор тот же, для которого агент отвечал: иначе вернула бы старый набор
+                if response and response.get("suggestion") and message.get("plan") == plan_key(plan):
                     st.button("Применить предложение", key=f"chat_apply_{number}", on_click=apply_plan,
                               args=(response["suggestion"],))
 
