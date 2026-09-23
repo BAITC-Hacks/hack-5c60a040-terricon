@@ -1,14 +1,41 @@
-# Akim for Five Hours — an AI city budget simulator
+# Akim for Five Hours — a city budget and decision-making simulator
 
 [Русский](README.md) · **English**
 
 Team **Terricon** · HackAlem AI, 23 September 2026 · Track 03: Governance · Challenge by Astana Innovations
 
-A city decision-maker allocates a fixed budget of 100 units to exactly five decisions, choosing from 14 measures
-across five districts. The application calculates the **Astana Quality of Life Score** using the organisers’ formula.
-An AI assistant explains strengths, risks and consequences, and suggests improvements. Code performs the calculations;
-the model selects tools and explains their results. The data and effects are hypothetical and supplied with the challenge.
-Results describe that model, not forecasts for the real city of Astana.
+**Have you ever faced a choice where every proposal mattered, the budget could not cover them all, and the decision was yours?**
+
+Imagine a meeting at city hall. Parents want a school closer to home. Residents in another district are worried
+about air quality. Transport planners need funding for a new line; utility services need to replace ageing networks.
+Everyone has a reason why their concern should come first. There is one budget. A decision is needed today,
+and residents will live with its consequences for years.
+
+For a manager or analyst, the difficult part is comparing those needs and explaining the choice. Who benefits?
+Which district has to wait again? When will the benefits arrive? What happens if winter brings heavy smog?
+Could we achieve nearly the same overall result while protecting something residents consider essential?
+A spending table shows where the money goes. This discussion also needs a view of what changes in each district.
+
+**Akim for Five Hours gives you a place to test that choice before approving it.** The exercise provides five
+districts, a budget of 100 units and 14 available measures. You must choose exactly five decisions. You can start
+with a familiar priority: help the weakest district, improve transport or preserve air quality. The application
+checks the budget, shows district-level changes and calculates the **Astana Quality of Life Score**.
+It also explains the plan’s strengths, remaining risks and a possible replacement.
+
+For example, the organisers’ plan raises the index from **52.56 to 56.54**. Replacing one measure can bring it
+to **57.21**. Then someone adds an important condition: **“Improve the plan, but do not worsen air quality in Saryarka.”**
+The system searches under that condition and recommends **56.78**. The best unconstrained plan would score
+**57.24**, so preserving air quality costs **0.46 points of the overall index**. There is now a concrete trade-off
+to discuss: are we willing to give up some of the total gain to protect this district’s air quality?
+
+The exercise serves managers who need to justify a choice, analysts comparing alternatives, and learners who
+want to see the consequences of their own decisions. AI helps express conditions in everyday language and explains
+the results. The software engine handles formulas, budget checks and search. The user applies suggestions and approves plans.
+
+**Try it: which five decisions would you choose, and how would you explain them to residents of the district that received less?**
+
+The prototype uses hypothetical data and effects supplied by the challenge organisers. All figures above are
+results of this educational model. Real-city use would require verified local data and validated estimates of measure effects.
 
 This is the English documentation. The application interface is in Russian; the walkthrough keeps the actual button
 labels so you can find them on screen. An *akim* is the head of a local administration in Kazakhstan.
