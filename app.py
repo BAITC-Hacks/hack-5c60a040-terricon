@@ -311,10 +311,8 @@ with lead:
 with tab_plan:
     with result_col:
         st.subheader("Что изменилось в городе")
-        components.html(city_html(result, base, data["indicators"]), height=820)
-        if not result["valid"]:
-            st.info("Результат появится, когда набор будет соответствовать правилам (слева).")
-        else:
+        if result["valid"]:
+            # Сначала — какие острые проблемы решены: это то, что стоит за ростом индекса (совет Codex 16:00)
             st.markdown("**Острые проблемы** — показатели ниже 40 дают штраф −1 к индексу")
             problems = []
             for item in result["resolved_critical"]:
@@ -333,18 +331,24 @@ with tab_plan:
                 st.markdown("".join(problems), unsafe_allow_html=True)
             else:
                 st.caption("Острых проблем не было и нет.")
-
+        components.html(city_html(result, base, data["indicators"]), height=820)
+        if not result["valid"]:
+            st.info("Результат появится, когда набор будет соответствовать правилам (слева).")
+        else:
             st.markdown("**Какое решение дало больше всего** — насколько упадёт индекс, если его убрать")
             contributions = sorted(result["contributions"], key=lambda item: -item["score_contribution"])
             top_value = max((item["score_contribution"] for item in contributions), default=0) or 1
             bars = []
-            for item in contributions:
+            for number, item in enumerate(contributions):
                 width = max(item["score_contribution"], 0) / top_value * 100
+                # Главный вклад — золотым, как полоса флага: судья сразу видит, какое решение сработало сильнее
+                accent = ";border-left:6px solid #FEC50C" if number == 0 else ""
+                bar_color = ";background:#FEC50C" if number == 0 else ""
                 bars.append(
-                    f'<div class="akim-row" style="display:block"><div style="display:flex;justify-content:'
+                    f'<div class="akim-row" style="display:block{accent}"><div style="display:flex;justify-content:'
                     f'space-between"><span>{esc(item["name"])} — {esc(place(item))}</span>'
-                    f'<b>{signed(item["score_contribution"])}</b></div>'
-                    f'<div class="bar" style="width:{width:.0f}%"></div></div>'
+                    f'<b>{signed(item["score_contribution"])} к индексу города</b></div>'
+                    f'<div class="bar" style="width:{width:.0f}%{bar_color}"></div></div>'
                 )
             st.markdown("".join(bars), unsafe_allow_html=True)
 
