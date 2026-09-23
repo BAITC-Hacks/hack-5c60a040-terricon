@@ -6,6 +6,7 @@ from . import llm
 from .data import load_data
 from .optimizer import improve, top
 from .scoring import baseline, evaluate
+from .search import rank
 
 log = logging.getLogger("akim.explain")
 
@@ -91,6 +92,7 @@ def facts(res: dict, imp: dict | None = None) -> dict:
         "score_per_point_of_district": lever,
         "budget_used": res["budget_used"],
         "budget_left": res["budget_left"],
+        "place_among_all": rank(res["plan"]),
         "best_possible_score": best["score"] if best else None,
         "gap_to_best": round(best["score"] - res["score"], 2) if best else None,
     }
@@ -148,6 +150,9 @@ def template(f: dict) -> dict:
                             f"{fmt(lever[1]['score_per_point'])}: поднимать отстающего выгоднее.")
 
     text = f"Сценарий даёт {fmt(f['score'])} ({fmt_signed(f['delta'])} к базе)."
+    place = f.get("place_among_all")
+    if place:
+        text += f" Место среди всех допустимых наборов: {place['rank']} из {place['total']:,}.".replace(",", " ")
     if f.get("suggestion"):
         s = f["suggestion"]
         text += f" Можно лучше: заменить {s['replace']} на {s['with']} — {fmt(s['score'])} ({fmt_signed(s['delta'])})."
