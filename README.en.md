@@ -52,6 +52,9 @@ and `scripts/check_scenario.py`. The Russian UI uses a comma as the decimal sepa
    a Score of 57.21, an increase of 0.67. Click `Применить улучшение` (Apply improvement).
 5. **Stress test, tab 3:** under `Городские события` (City events), click `Проверить сценарий` (Test scenario).
    Winter smog reduces the improved plan’s Score from 57.21 to 55.60; the application suggests a replacement measure.
+   Below, `Найти самый устойчивый` (Find the most robust, about 6 seconds): the highest-scoring plan (57.24) falls to
+   55.80 when school enrolment rises, while the most robust plan (57.07) keeps its worst case at 55.82; robustness
+   costs 0.17 points.
 6. **Approve, tab 4:** only the user can click to approve the plan. The saved result shows a Score of 57.21.
 
 ## The problem and intended users
@@ -116,6 +119,7 @@ from the review was to use district colours and before/after comparisons.
 | Chat | Ask why a result occurred, about a district or the remaining budget; see which tools were used |
 | City events | Winter smog, heating network failure, rising school enrolment and spring flooding; show changed Scores, new critical indicators and a suggested replacement |
 | Priority sensitivity | Raise a direction’s weight by 20% and compare the current plan with the best plan under the new weights |
+| Most robust plan | A stress test of hypothetical scenarios: for all 694,395 plans, the worst Score across the four city events; the current plan, the highest-scoring plan and the most robust plan side by side, with the cost of robustness and a `Взять` (Take) button |
 | District diagram | District colours reflect scores; a table covers ten indicators, with animated before/after changes |
 | Team leaderboard | Submit a named team plan and compare Score, improvement and rank among all valid plans |
 | Voice requests | Speech recognition with an OpenAI key |
@@ -308,13 +312,13 @@ It was removed in `77279e3` (14:18). The author appears as “AI AGENT” using 
 
 ## How we worked with AI
 
-Two participants built the project: **Vitaly Gozhev and Dmitry Shults**, with help from Claude and Codex.
+Two participants built the project: **Vitaly Bosh and Dmitry Shults**, with help from Claude and Codex.
 We set the goal, divided the work, discussed alternatives and made the final decisions. AI helped write code,
 review it and prepare documentation. An assistant’s suggestion became part of the project after checking it.
 
 | Participant | Responsibility |
 | --- | --- |
-| **Vitaly Gozhev** | Problem definition, priorities, interface, clarity of results and demonstration. Worked with Claude and Codex. |
+| **Vitaly Bosh** | Problem definition, priorities, interface, clarity of results and demonstration. Worked with Claude and Codex. |
 | **Dmitry Shults** | Calculation engine after the handover from Vitaly, workflow and numeric checks, team ranking, installation on a second machine and research into related tools. Worked with Codex. |
 
 **Our working agreement.** We described the problem and expected results in [CASE.md](CASE.md), assigned work in
@@ -350,6 +354,6 @@ and the user applies and approves decisions.
 
 ## Team
 
-**Vitaly Gozhev / Виталий Гожев** (`Karagandinec`) — captain, product and interface.
+**Vitaly Bosh / Виталий Бош** (`Karagandinec`) — captain, product and interface.
 
 **Dmitry Shults / Дмитрий Шульц** (`avtosubaru25`) — technical lead, calculation engine and deployment.
