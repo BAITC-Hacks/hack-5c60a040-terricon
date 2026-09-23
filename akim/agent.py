@@ -5,6 +5,7 @@ import re
 from . import llm
 from . import mission
 from .data import district_names, load_data
+from .events import events, sensitivity, stress_test
 from .nlu import districts_in, measures_in, parse_request
 from .explainer import explain, fmt, fmt_signed, unknown_numbers
 from .optimizer import improve
@@ -128,6 +129,24 @@ def _rules_chat(message: str, plan: list[dict]) -> dict:
                        f"Слабые места: {weak}. Сильнее всего помогут: {cure}.",
                        "district_report", ["Паспорт района"])
 
+    event = next((e for e in events() if re.search(
+        {"smog": r"смог|задымл", "heating": r"теплосет|авари\w*\s+(на\s+)?тепл|без\s+отоплен",
+         "school_boom": r"школьник|рост\w*\s+(числа\s+)?дет", "flood": r"паводок|подтоплен|наводнен"}[e["id"]], low)),
+                 None)
+    if event and valid:
+        r = stress_test(items, event["id"])
+        return _answer(r["text"], "stress_test", ["Городские события"],
+                       suggestion=r["advice"]["plan"] if r["advice"] else None)
+
+    if re.search(r"устойчив|приоритет|если\s+\w+\s+важнее|веса", low) and valid:
+        rows = sensitivity(items)
+        changed = [r["name"] for r in rows if r["best_changes"]]
+        text = "Если одно направление станет важнее на 20%: " + "; ".join(
+            f"{r['name'].lower()} — ваш сценарий {fmt(r['score'])}, лучший {fmt(r['best_score'])}" for r in rows) + "."
+        text += (f" Лучший набор меняется при приоритете: {', '.join(c.lower() for c in changed)}." if changed
+                 else " Лучший набор от приоритетов не зависит.")
+        return _answer(text, "sensitivity", ["Устойчивость к приоритетам"])
+
     if re.search(r"сравн", low):
         if not valid:
             return _answer("Сначала соберите допустимый набор из 5 решений — тогда сравню.", "compare", [])
@@ -172,6 +191,7 @@ TOOL_TITLES = {
     "find_best": "Подбор под цель по всем наборам", "plan_rank": "Место сценария", "district_report": "Паспорт района",
     "compare_plans": "Сравнение сценариев", "what_if": "«Что если»", "budget_frontier": "Кривая «бюджет → Score»",
     "run_mission": "Поручение: поиск → Проверяющий → повторный поиск",
+    "stress_test": "Городские события", "sensitivity": "Устойчивость к приоритетам",
 }
 _PLAN_SCHEMA = {"type": "array", "items": {"type": "object", "properties": {
     "measure": {"type": "string", "description": "M1…M14"},
@@ -219,6 +239,11 @@ TOOLS = [
               "min_district_d": {"type": ["number", "null"], "description": "ни один район не ниже"},
               "maximize": {"type": "string", "description": "score или название района, который поднять"},
           }, []),
+    _tool("stress_test", "Пересчитать сценарий при городском событии и дать совет.", {
+        "plan": _PLAN_SCHEMA, "event_id": {"type": "string", "enum": ["smog", "heating", "school_boom", "flood"]}},
+          ["plan", "event_id"]),
+    _tool("sensitivity", "Как меняется Score сценария и лучший набор, если одно направление важнее на 20%.",
+          {"plan": _PLAN_SCHEMA}, ["plan"]),
 ]
 
 SYSTEM_PROMPT = """Ты — помощник городского управленца в симуляторе «Аким на 5 часов» (условные данные, не реальная Астана).
@@ -276,6 +301,10 @@ def _run_tool(name: str, args: dict, plan: list[dict] | None = None):
         return what_if(args["plan"], remove=args.get("remove"), add=args.get("add"))
     if name == "budget_frontier":
         return frontier()
+    if name == "stress_test":
+        return stress_test(args["plan"], args["event_id"])
+    if name == "sensitivity":
+        return sensitivity(args["plan"])
     raise ValueError(f"неизвестный инструмент {name}")
 
 
@@ -288,6 +317,8 @@ def _suggestion_from(name: str, result):
         return result["new_plan"]
     if name == "run_mission":
         return result["suggestion"]
+    if name == "stress_test" and result.get("advice"):
+        return result["advice"]["plan"]
     return None
 
 

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "smog",
+    "name": "Зимний смог",
+    "description": "Морозная безветренная неделя: печное отопление частного сектора накрывает районы смогом.",
+    "shocks": [
+      {"district": "Сарыарка", "indicator": "E2", "change": -12},
+      {"district": "Байконур", "indicator": "E2", "change": -6}
+    ]
+  },
+  {
+    "id": "heating",
+    "name": "Авария на теплосети",
+    "description": "Порыв магистрали в мороз: отключения отопления в старом жилом фонде, поток обращений.",
+    "shocks": [
+      {"district": "Алматы", "indicator": "C1", "change": -12},
+      {"district": "Алматы", "indicator": "C2", "change": -5}
+    ]
+  },
+  {
+    "id": "school_boom",
+    "name": "Рост числа школьников",
+    "description": "Сдали новые жилые комплексы: в школы и детсады пришло больше детей, чем планировали.",
+    "shocks": [
+      {"district": "Есиль", "indicator": "S1", "change": -8},
+      {"district": "Нура", "indicator": "S1", "change": -6}
+    ]
+  },
+  {
+    "id": "flood",
+    "name": "Весенний паводок",
+    "description": "Подтопление улиц и сетей в низинах: аварии ЖКХ и заторы на объездах.",
+    "shocks": [
+      {"district": "Нура", "indicator": "C1", "change": -8},
+      {"district": "Нура", "indicator": "T1", "change": -6}
+    ]
+  }
+]

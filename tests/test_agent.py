@@ -107,3 +107,10 @@ def test_llm_agent_invented_number_falls_back_to_rules(monkeypatch):
     monkeypatch.setattr(agent.llm, "complete", lambda messages, **kw: next(script))
     r = akim.chat("какой у меня Score?", EXAMPLE)
     assert r["mode"] == "rules" and "61,3" in r["note"]
+
+
+def test_chat_handles_events_and_priorities():
+    r = akim.chat("что будет при аварии на теплосети?", EXAMPLE)
+    assert r["intent"] == "stress_test" and "Алматы" in r["reply"]
+    s = akim.chat("насколько сценарий устойчив к приоритетам?", EXAMPLE)
+    assert s["intent"] == "sensitivity" and "20%" in s["reply"]

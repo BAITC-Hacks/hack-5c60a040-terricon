@@ -8,7 +8,7 @@ def _base_values():
     return {d["name"]: {k: float(v) for k, v in d["values"].items()} for d in load_data()["districts"]}
 
 
-def _apply_plan(known_items):
+def _apply_plan(known_items, shocks=None):
     data = load_data()
     horizon = data["horizon_quarters"]
     names = district_names()
@@ -40,6 +40,9 @@ def _apply_plan(known_items):
                 "bonus": syn["bonus"],
             })
 
+    for shock in shocks or ():
+        values[shock["district"]][shock["indicator"]] += shock["change"]
+
     for d in names:
         for k in values[d]:
             values[d][k] = min(100.0, max(0.0, values[d][k]))
@@ -47,9 +50,9 @@ def _apply_plan(known_items):
     return values, applied_synergies
 
 
-def _score_from_values(values):
+def _score_from_values(values, weights=None):
     data = load_data()
-    weights = indicator_weights()
+    weights = weights or indicator_weights()
     pop = {d["name"]: d["population_share"] for d in data["districts"]}
     threshold = data["crit_threshold"]
 
@@ -71,9 +74,9 @@ def _score_from_values(values):
     return score, d_avg, D, min_d_name, n_crit, critical
 
 
-def _evaluate_raw(known_items):
-    values, synergies = _apply_plan(known_items)
-    score, d_avg, D, min_d_name, n_crit, critical = _score_from_values(values)
+def _evaluate_raw(known_items, shocks=None, weights=None):
+    values, synergies = _apply_plan(known_items, shocks)
+    score, d_avg, D, min_d_name, n_crit, critical = _score_from_values(values, weights)
     return {
         "score": score,
         "d_avg": d_avg,

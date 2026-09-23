@@ -56,17 +56,30 @@ def _index() -> dict:
     base = np.array([[d["values"][k] for k in codes] for d in data["districts"]], dtype=float)
     weights = np.array([indicator_weights()[k] for k in codes])
     pop = np.array([d["population_share"] for d in data["districts"]])
-    formula = data["score_formula"]
     synergies = [(ids.index(s["pair"][0]), ids.index(s["pair"][1]), codes.index(s["indicator"]), s["bonus"])
                  for s in data["synergies"]]
+    ix = {"M": M, "DC": DC, "ids": ids, "names": names, "codes": codes, "effect": effect, "base": base,
+          "weights": weights, "pop": pop, "synergies": synergies}
+    score, dist = _score_rows(ix, base, weights)
+    cost = np.array([m["cost"] for m in measures])[M].sum(axis=1)
+    order = np.argsort(-score, kind="stable")
+    ix.update({"M": M[order], "DC": DC[order], "score": score[order], "D": dist[order], "cost": cost[order]})
+    return ix
 
+
+def _score_rows(ix: dict, base: np.ndarray, weights: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    data = load_data()
+    formula = data["score_formula"]
+    M, DC, effect, pop = ix["M"], ix["DC"], ix["effect"], ix["pop"]
+    nd = len(ix["names"])
+    city = nd
     n = len(M)
     score = np.empty(n)
     dist = np.empty((n, nd))
     for start in range(0, n, CHUNK):
         m, dc = M[start:start + CHUNK], DC[start:start + CHUNK]
         values = base + effect[m, dc].sum(axis=1)
-        for a, b, ki, bonus in synergies:
+        for a, b, ki, bonus in ix["synergies"]:
             has_a = m == a
             both = has_a.any(axis=1) & (m == b).any(axis=1)
             where_a = (dc * has_a).sum(axis=1)
@@ -79,11 +92,30 @@ def _index() -> dict:
         score[start:start + CHUNK] = (formula["d_avg"] * (d_scores @ pop) + formula["min_d"] * d_scores.min(axis=1)
                                       - formula["crit_penalty"] * n_crit)
         dist[start:start + CHUNK] = d_scores
+    return score, dist
 
-    cost = np.array([m["cost"] for m in measures])[M].sum(axis=1)
-    order = np.argsort(-score, kind="stable")
-    return {"M": M[order], "DC": DC[order], "score": score[order], "D": dist[order], "cost": cost[order],
-            "ids": ids, "names": names, "codes": codes, "effect": effect, "base": base, "synergies": synergies}
+
+@lru_cache(maxsize=16)
+def _variant_scores(shifts: tuple = (), weights: tuple = ()) -> np.ndarray:
+    ix = _index()
+    base = ix["base"].copy()
+    for di, ki, change in shifts:
+        base[di, ki] += change
+    w = np.array(weights) if weights else ix["weights"]
+    return _score_rows(ix, base, w)[0]
+
+
+def best_variant(shocks=(), weights: dict | None = None) -> dict:
+    """Лучший набор, если сдвинуть исходные показатели (событие) или веса (приоритеты)."""
+    ix = _index()
+    shifts = tuple((ix["names"].index(s["district"]), ix["codes"].index(s["indicator"]), float(s["change"]))
+                   for s in shocks)
+    w = tuple(float(weights[k]) for k in ix["codes"]) if weights else ()
+    scores = _variant_scores(shifts, w)
+    row = int(scores.argmax())
+    item = _item(ix, row)
+    item["score"] = round(float(scores[row]), 2)
+    return item
 
 
 def _indicator_values(ix: dict, rows: np.ndarray, district: str, indicator: str) -> np.ndarray:
