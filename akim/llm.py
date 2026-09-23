@@ -50,11 +50,13 @@ def complete(messages: list[dict], *, json_mode: bool = False, tools: list[dict]
     # temperature не передаём: у gpt-5.6-sol и gpt-6-astra вызов с ним падает
     name = (model or model_name()).strip()
     kwargs = {"model": name, "messages": messages}
-    if reasoning_effort is not None:
-        kwargs["reasoning_effort"] = reasoning_effort
-    elif _is_reasoning(name):
+    if _is_reasoning(name):
         # с инструментами Chat Completions принимает только reasoning_effort="none"
-        kwargs["reasoning_effort"] = "none" if tools else os.getenv("OPENAI_REASONING_EFFORT", "low")
+        kwargs["reasoning_effort"] = (
+            reasoning_effort
+            if reasoning_effort is not None
+            else "none" if tools else os.getenv("OPENAI_REASONING_EFFORT", "low")
+        )
     if json_mode:
         kwargs["response_format"] = {"type": "json_object"}
     if tools:
