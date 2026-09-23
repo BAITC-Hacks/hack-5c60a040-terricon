@@ -576,11 +576,14 @@ with tab_check:
         )
         if result["valid"]:
             sensitivity_key = plan_key(plan)
-            if st.session_state.get("sensitivity_plan") != sensitivity_key:
+            # Около 8 секунд: считаем только по кнопке, иначе каждый клик на экране ждал бы этот расчёт
+            if st.button("Проверить все направления — около 8 секунд", key="run_sensitivity", type="primary"):
                 with st.spinner("Проверяем все направления…"):
                     st.session_state["sensitivity_result"] = akim.sensitivity(plan)
                     st.session_state["sensitivity_plan"] = sensitivity_key
-            for direction in st.session_state["sensitivity_result"]:
+            shown = st.session_state.get("sensitivity_result") if st.session_state.get(
+                "sensitivity_plan") == sensitivity_key else []
+            for direction in shown:
                 st.markdown(
                     '<div class="akim-row">'
                     f"<b>{DIRECTION_ICONS[direction['direction']]} {esc(plain(direction['name']))}</b>"

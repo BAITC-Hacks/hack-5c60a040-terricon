@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import akim.approvals
 import akim.teams
 from streamlit.testing.v1 import AppTest
@@ -7,7 +9,7 @@ def _app(monkeypatch, tmp_path) -> AppTest:
     monkeypatch.setenv("AKIM_NO_LLM", "1")
     monkeypatch.setattr(akim.approvals, "STORE", tmp_path / "approved.json")
     monkeypatch.setattr(akim.teams, "STORE", tmp_path / "teams.json")
-    return AppTest.from_file("app.py", default_timeout=60).run()
+    return AppTest.from_file(str(Path(__file__).resolve().parent.parent / "app.py"), default_timeout=60).run()
 
 
 def _text(app) -> str:
@@ -75,6 +77,7 @@ def test_district_passport_and_sensitivity_use_engine_values(monkeypatch, tmp_pa
     assert any(metric.label == "Балл района" and metric.value == "52,96" for metric in app.metric)
     assert any(metric.label == "Место с конца" and metric.value == "1" for metric in app.metric)
 
+    app.button(key="run_sensitivity").click().run()
     text = _text(app)
     assert "Доступность общественного транспорта" in text
     assert "Поликлиники и первичная медпомощь" in text
