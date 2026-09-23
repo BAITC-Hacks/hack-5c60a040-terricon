@@ -11,6 +11,7 @@ from .rules import normalize_plan, validate
 from .scoring import baseline, evaluate, raw_score
 from .search import best_variant, find_best, rank, search_plans, total
 from .tools import compare, district_report, frontier, what_if
+from .teams import leaderboard, submit
 from .voice import transcribe
 
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     "improve", "top", "best_by_cost", "precompute", "explain", "approve", "approved", "brief",
     "find_best", "search_plans", "rank", "total", "compare", "district_report", "frontier", "what_if",
     "transcribe", "chat", "parse_request", "run_mission", "events", "stress_test", "sensitivity", "best_variant",
+    "submit", "leaderboard",
 ]
