@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import akim
 import akim.approvals
 import akim.teams
 from streamlit.testing.v1 import AppTest
@@ -13,7 +14,8 @@ def _app(monkeypatch, tmp_path) -> AppTest:
 
 
 def _text(app) -> str:
-    return " ".join(element.value for element in app.markdown) + " ".join(c.value for c in app.caption)
+    elements = (*app.markdown, *app.caption, *app.error, *app.warning, *app.info, *app.success)
+    return " ".join(element.value for element in elements)
 
 
 def test_main_message_is_readable_in_five_seconds(monkeypatch, tmp_path):
@@ -34,6 +36,43 @@ def test_improvement_applies_without_warnings_and_old_offer_disappears(monkeypat
     assert not [w for w in app.warning if "rerun" in w.value]
     assert "57,21" in next(m.value for m in app.markdown if "Главное" in m.value)
     assert not [b for b in app.button if b.key == "apply_improvement"]
+
+
+def test_old_advice_disappears_and_signs_and_codes_are_readable(monkeypatch, tmp_path):
+    app = _app(monkeypatch, tmp_path)
+    assert any("лучший даёт **57,24**" in m.value for m in app.markdown)
+    app.button(key="improve_plan").click().run()
+    assert [b for b in app.button if b.key == "apply_improvement"]
+    app.selectbox(key="district_4").set_value("Есиль").run()
+    assert "56,60" in next(m.value for m in app.markdown if "Главное" in m.value)
+    assert not [b for b in app.button if b.key == "apply_improvement"]
+    app.selectbox(key="measure_4").set_value("M11").run()
+    assert any("разгрузка дорог −2" in c.value for c in app.caption)
+    assert "+-" not in _text(app)
+    app.selectbox(key="measure_4").set_value("M7").run()
+    errors = " ".join(e.value for e in app.error)
+    assert "выбрано более одного раза" in errors and "M7" not in errors
+    assert not app.exception
+
+
+def test_event_search_and_chat_mission_follow_current_conditions(monkeypatch, tmp_path):
+    app = _app(monkeypatch, tmp_path)
+    app.button(key="stress_test").click().run()
+    assert any("55,30" in m.value for m in app.markdown)
+    app.selectbox(key="event_select").set_value(akim.events()[1]["id"]).run()
+    assert not any("55,30" in m.value for m in app.markdown)
+    assert not [b for b in app.button if b.key == "stress_apply"]
+
+    app.button(key="find_target").click().run()
+    assert [b for b in app.button if b.key.startswith("take_target_")]
+    app.slider(key="target_budget").set_value(80).run()
+    assert not [b for b in app.button if b.key.startswith("take_target_")]
+    assert any("Условия изменились" in c.value for c in app.caption)
+
+    app.chat_input(key="chat_prompt").set_value("Улучши, но не ухудшай качество воздуха в Сарыарке").run()
+    assert any("Как агент работал" in e.label for e in app.expander)
+    assert [b for b in app.button if b.key.startswith("chat_apply_")]
+    assert not app.exception
 
 
 def test_mission_price_of_conditions(monkeypatch, tmp_path):

@@ -100,8 +100,10 @@ PLAIN_WORDS = [
 
 
 def plain(text: str) -> str:
-    """Тексты движка — простыми словами: без «Score», «лаг», «критические значения»."""
+    """Тексты движка — простыми словами: без «Score», «лаг», «критические значения» и кодов мер вроде M7."""
     text = re.sub(r"лаг (\d+) кв\.", lambda match: quarters(int(match.group(1))), str(text))
+    text = re.sub(r"\bM\d{1,2}\b", lambda match: f"«{measure_by_id[match.group(0)]['name']}»"
+                  if match.group(0) in measure_by_id else match.group(0), text)
     for old, new in PLAIN_WORDS:
         text = text.replace(old, new)
     return text
@@ -127,7 +129,7 @@ def measure_title(measure_id: str) -> str:
 
 def measure_details(measure_id: str) -> str:
     measure = measure_by_id[measure_id]
-    effects = ", ".join(f"{ICONS[code]} {indicator_name[code].lower()} +{value:g}"
+    effects = ", ".join(f"{ICONS[code]} {indicator_name[code].lower()} {'+' if value >= 0 else '−'}{abs(value):g}"
                         for code, value in measure["effects"].items())
     where = " · для всего города" if measure["scope"] == "city" else ""
     return (f"**Цена {measure['cost']}** · {direction_name[measure['direction']]} · {effects} · "
@@ -227,6 +229,10 @@ with tab_plan:
                     st.markdown("**Где:** весь город — мера работает во всех районах сразу")
                 st.caption(measure_details(measure_id))
             selected.append({"measure": measure_id, "district": district})
+        # Решения поменяли руками — советы и проверки старого набора больше не про него
+        if plan_key(selected) != plan_key(st.session_state["plan"]):
+            for key in STATE_BY_PLAN:
+                st.session_state.pop(key, None)
         st.session_state["plan"] = selected
 
 plan = st.session_state["plan"]
@@ -242,7 +248,7 @@ with tab_plan:
             st.success("Все правила соблюдены")
         else:
             for error in result["errors"]:
-                st.error(error["message"])
+                st.error(plain(error["message"]))
         reset_col, best_col = st.columns(2)
         reset_col.button("Вернуть пример организаторов", key="reset_example", on_click=apply_plan,
                          args=(EXAMPLE_PLAN,), use_container_width=True)
@@ -277,7 +283,7 @@ with lead:
             ("Бюджет", f"{used} из {budget}", f"осталось {budget - used}"),
         ]
     else:
-        reasons = "; ".join(error["message"] for error in result["errors"])
+        reasons = "; ".join(plain(error["message"]) for error in result["errors"])
         st.markdown(
             f'<div class="akim-lead bad"><b>Сценарий пока нельзя принять:</b> {esc(reasons)}. '
             "Исправьте выбор во вкладке 1 — и увидите результат.</div>",
@@ -480,7 +486,11 @@ with tab_agent:
                 response = message.get("response")
                 if response and response.get("tools_used"):
                     st.caption("Агент использовал: " + " → ".join(response["tools_used"]))
-                if response and response.get("suggestion") and not response.get("mission"):
+                if response and response.get("mission"):
+                    with st.expander("Как агент работал — шаги по порядку"):
+                        for step in response["mission"]["steps"]:
+                            st.markdown(f"**{step['role']}** — {plain(step['action'])}: {plain(step['result'])}")
+                if response and response.get("suggestion"):
                     st.button("Применить предложение", key=f"chat_apply_{number}", on_click=apply_plan,
                               args=(response["suggestion"],))
 
@@ -507,6 +517,9 @@ with tab_check:
         if st.button("Проверить сценарий", key="stress_test", type="primary", disabled=not result["valid"]):
             st.session_state["stress_result"] = akim.stress_test(plan, event_id)
         stress = st.session_state.get("stress_result")
+        if stress and stress["event"]["id"] != event_id:
+            st.caption("Выбрано другое событие — нажмите «Проверить сценарий».")
+            stress = None
         if stress:
             st.markdown(
                 f"**{esc(stress['event']['name'])}:** индекс {fmt(stress['score_before'])} → "
@@ -599,11 +612,9 @@ with tab_check:
     with best_tab:
         if result["valid"]:
             position = akim.rank(plan)
-            st.markdown(
-                f"Ваш сценарий — **{position['rank']:,}-й из {position['total']:,}** допустимых вариантов; "
-                f"лучший даёт **{fmt(position['best_score'])}**.".replace(",", " ")
-                .replace(f" {fmt(position['best_score']).replace(',', ' ')}", f" {fmt(position['best_score'])}")
-            )
+            place_text = f"{position['rank']:,}-й из {position['total']:,}".replace(",", " ")
+            st.markdown(f"Ваш сценарий — **{place_text}** допустимых вариантов; "
+                        f"лучший даёт **{fmt(position['best_score'])}**.")
         for number, option in enumerate(akim.top(5), start=1):
             with st.container(border=True):
                 text_col, button_col = st.columns([4, 1])
@@ -621,11 +632,16 @@ with tab_check:
                                           key="target_include")
         exclude = exclude_col.multiselect("Не брать", measure_ids, format_func=lambda i: measure_by_id[i]["name"],
                                           key="target_exclude")
+        target_key = (max_budget, floor, tuple(include), tuple(exclude))
         if st.button("Найти варианты", key="find_target", type="primary"):
             st.session_state["target_results"] = akim.find_best(
                 max_budget=max_budget, include=include, exclude=exclude, min_district_d=floor or None, n=5
             )
+            st.session_state["target_key"] = target_key
         found = st.session_state.get("target_results")
+        if found is not None and st.session_state.get("target_key") != target_key:
+            st.caption("Условия изменились — нажмите «Найти варианты».")
+            found = None
         if found is not None and not found:
             st.warning("При таких условиях допустимых вариантов нет — ослабьте условия.")
         for number, option in enumerate(found or []):

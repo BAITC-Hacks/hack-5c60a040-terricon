@@ -61,12 +61,13 @@ TEMPLATE = """
     <span><span style="display:inline-block;width:12px;height:12px;background:#43A047;border-radius:3px"></span> хорошо</span>
     <span style="color:#6B8595">· схема, не точная карта</span>
   </div>
-  <div style="font-size:15px;font-weight:600;margin:12px 0 2px">Показатели районов: сейчас после ваших решений</div>
+  <div id="table-title" style="font-size:15px;font-weight:600;margin:12px 0 2px">Показатели районов: сейчас после ваших решений</div>
   <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:#3D5A6C;margin:0 0 6px">
     <span>Все от 0 до 100, больше — лучше.</span>
     <span><span style="display:inline-block;width:12px;height:12px;background:#FDECEA;border:1px solid #E8A09A;border-radius:3px"></span> острая проблема — ниже 40</span>
     <span><span style="display:inline-block;width:12px;height:12px;background:#FFF4D6;border:1px solid #E6C66A;border-radius:3px"></span> на грани — 40–45</span>
     <span><b style="color:#1B7F4B">▲+10</b> — стало лучше</span>
+    <span><b style="color:#C62828">▼−2</b> — стало хуже</span>
   </div>
   <div id="cards"></div>
 </div>
@@ -111,17 +112,21 @@ const head = `<tr><th style="text-align:left;padding:2px 4px;font-size:12px;colo
 const rows = order.map(d => {
   const delta = d.after-d.before;
   const cells = d.indicators.map(i => {
-    const up = i.after-i.before; const [bg,fg] = level(i.after);
+    const up = Math.round((i.after-i.before)*100)/100; const [bg,fg] = level(i.after);
     const plain = i.after>45;
+    // Рост — зелёный ▲+, падение (например, дороги у «Безопасных переходов») — красный ▼−
+    const tone = up > 0 ? '#1B7F4B' : '#C62828';
+    const mark = up ? `<div style="font-size:10.5px;color:${tone};font-weight:700;white-space:nowrap">${up > 0 ? '▲+' : '▼−'}${short(Math.abs(up))}</div>` : '';
     return `<td title="${i.name}: ${short(i.before)}${up ? ' → '+short(i.after) : ''}" style="background:${plain?'#FFFFFF':bg};
-      color:${plain?'#0B2545':fg};border:${up?'2px solid #2E7D32':'1px solid #E3EEF1'};border-radius:6px;text-align:center;
-      padding:3px 1px;font-weight:${up?700:500};font-size:13px;line-height:1.15">${short(i.after)}${up ?
-      `<div style="font-size:10.5px;color:#1B7F4B;font-weight:700;white-space:nowrap">▲+${short(up)}</div>` : ''}</td>`;
+      color:${plain?'#0B2545':fg};border:${up?'2px solid '+tone:'1px solid #E3EEF1'};border-radius:6px;text-align:center;
+      padding:3px 1px;font-weight:${up?700:500};font-size:13px;line-height:1.15">${short(i.after)}${mark}</td>`;
   }).join('');
   return `<tr><th style="text-align:left;padding:2px 4px;white-space:nowrap;font-size:14px">${d.name}<br>
     <span style="font-size:12px;font-weight:400">${fmt(d.before)} → <b>${fmt(d.after)}</b>
     <b style="color:${delta>0?'#1B7F4B':'#3D5A6C'}">${delta>=0?'+':'−'}${fmt(Math.abs(delta))}</b></span></th>${cells}</tr>`;
 }).join('');
+if(!DATA.valid) document.getElementById('table-title').textContent =
+  'Показатели районов: сейчас — решения не применены, сценарий пока не проходит правила';
 cards.innerHTML = `<table style="width:100%;border-collapse:separate;border-spacing:3px;table-layout:fixed">
   <colgroup><col style="width:22%">${cols.map(() => '<col>').join('')}</colgroup>${head}${rows}</table>`;
 function draw(t){
