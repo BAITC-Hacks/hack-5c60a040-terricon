@@ -61,3 +61,26 @@ def test_over_budget_is_explained_in_words(monkeypatch, tmp_path):
     app.selectbox(key="measure_3").set_value("M13").run()
     assert not app.exception
     assert any("нельзя принять" in m.value for m in app.markdown)
+
+
+def test_district_passport_and_sensitivity_use_engine_values(monkeypatch, tmp_path):
+    app = _app(monkeypatch, tmp_path)
+
+    tab_labels = [tab.label for tab in app.tabs]
+    assert "Паспорт района" in tab_labels
+    assert "Если приоритеты сменятся" in tab_labels
+
+    app.selectbox(key="district_report_select").set_value("Нура").run()
+    assert not app.exception
+    assert any(metric.label == "Балл района" and metric.value == "52,96" for metric in app.metric)
+    assert any(metric.label == "Место с конца" and metric.value == "1" for metric in app.metric)
+
+    text = _text(app)
+    assert "Доступность общественного транспорта" in text
+    assert "Поликлиники и первичная медпомощь" in text
+    assert "Линия ЛРТ / расширение" in text
+    assert "цена 30 · балл района +2,02 · индекс города +0,83" in text
+    assert "🚌 Транспорт" in text
+    assert "ваш индекс <b>56,41</b> · лучший индекс <b>57,28</b>" in text
+    assert "🌳 Экология" in text
+    assert "M3" not in text and "T2" not in text

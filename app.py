@@ -486,8 +486,15 @@ with tab_agent:
 
 # ---------- Вкладка 3: проверка на прочность ----------
 with tab_check:
-    events_tab, best_tab, search_tab, compare_tab = st.tabs(
-        ["Городские события", "Лучшие варианты", "Подбор под условия", "Сравнить с сохранённым"]
+    events_tab, district_tab, sensitivity_tab, best_tab, search_tab, compare_tab = st.tabs(
+        [
+            "Городские события",
+            "Паспорт района",
+            "Если приоритеты сменятся",
+            "Лучшие варианты",
+            "Подбор под условия",
+            "Сравнить с сохранённым",
+        ]
     )
     with events_tab:
         st.markdown('<div class="akim-step">Что будет с вашим сценарием, если в городе что-то случится.</div>',
@@ -512,6 +519,80 @@ with tab_check:
                 st.success(f"Совет на этот случай: {swap_words(advice['replace'], advice['with'])} — "
                            f"индекс при событии {fmt(advice['score'])} ({signed(advice['delta'])}).")
                 st.button("Применить совет", key="stress_apply", on_click=apply_plan, args=(advice["plan"],))
+    with district_tab:
+        st.markdown(
+            '<div class="akim-step">Выберите район — движок покажет его слабые места и решения с самой '
+            "высокой отдачей.</div>",
+            unsafe_allow_html=True,
+        )
+        selected_district = st.selectbox(
+            "Район",
+            district_names,
+            index=district_names.index(result["min_district"]["name"]) if result["valid"] else 0,
+            key="district_report_select",
+        )
+        if result["valid"]:
+            district_report = akim.district_report(selected_district, plan)
+            district_score_col, district_place_col = st.columns(2)
+            district_score_col.metric("Балл района", fmt(district_report["d"]))
+            district_place_col.metric(
+                "Место с конца",
+                str(district_report["place_from_bottom"]),
+                help="1 — самый отстающий район",
+            )
+            st.caption(plain(district_report["profile"]))
+
+            st.markdown("**Слабые показатели**")
+            for weak in district_report["weak"]:
+                level = "bad" if weak["value"] < data["crit_threshold"] else "warn"
+                st.markdown(
+                    '<div class="akim-row">'
+                    f"<b>{esc(plain(weak['name']))}</b>"
+                    f'<span class="chip {level}">{fmt(weak["value"])} из 100</span>'
+                    "</div>",
+                    unsafe_allow_html=True,
+                )
+
+            st.markdown("**Какие решения помогут сильнее всего**")
+            st.caption("Приросты показаны относительно текущего сценария.")
+            for option in district_report["best_measures"]:
+                st.markdown(
+                    '<div class="akim-row">'
+                    f"<b>{esc(plain(option['name']))}</b>"
+                    "<span>"
+                    f"цена {option['cost']} · балл района {signed(option['d_gain'])} · "
+                    f"индекс города {signed(option['score_gain'])}"
+                    "</span></div>",
+                    unsafe_allow_html=True,
+                )
+        else:
+            st.info("Сначала исправьте сценарий — затем появится паспорт района.")
+
+    with sensitivity_tab:
+        st.markdown(
+            '<div class="akim-step">Проверка устойчивости: что станет с результатом, если вес одного '
+            "направления вырастет на 20%, а остальные веса уменьшатся пропорционально.</div>",
+            unsafe_allow_html=True,
+        )
+        if result["valid"]:
+            sensitivity_key = plan_key(plan)
+            if st.session_state.get("sensitivity_plan") != sensitivity_key:
+                with st.spinner("Проверяем все направления…"):
+                    st.session_state["sensitivity_result"] = akim.sensitivity(plan)
+                    st.session_state["sensitivity_plan"] = sensitivity_key
+            for direction in st.session_state["sensitivity_result"]:
+                st.markdown(
+                    '<div class="akim-row">'
+                    f"<b>{DIRECTION_ICONS[direction['direction']]} {esc(plain(direction['name']))}</b>"
+                    "<span>"
+                    f"ваш индекс <b>{fmt(direction['score'])}</b> · "
+                    f"лучший индекс <b>{fmt(direction['best_score'])}</b> · "
+                    f"резерв <span class=\"up\">{signed(direction['gap'])}</span>"
+                    "</span></div>",
+                    unsafe_allow_html=True,
+                )
+        else:
+            st.info("Сначала исправьте сценарий — затем можно проверить смену приоритетов.")
     with best_tab:
         if result["valid"]:
             position = akim.rank(plan)
