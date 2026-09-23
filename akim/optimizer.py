@@ -38,10 +38,12 @@ def improve(plan):
     candidates = []
     for i, item in enumerate(items):
         for measure in data["measures"]:
-            if measure["id"] in current_ids:
+            if measure["id"] in current_ids and measure["id"] != item["measure"]:
                 continue
             district_options = list(names) if measure["scope"] == "district" else [None]
             for d in district_options:
+                if measure["id"] == item["measure"] and d == item["district"]:
+                    continue
                 new_items = items[:i] + [{"measure": measure["id"], "district": d}] + items[i + 1:]
                 if validate(new_items):
                     continue

@@ -83,7 +83,22 @@ def _index() -> dict:
     cost = np.array([m["cost"] for m in measures])[M].sum(axis=1)
     order = np.argsort(-score, kind="stable")
     return {"M": M[order], "DC": DC[order], "score": score[order], "D": dist[order], "cost": cost[order],
-            "ids": ids, "names": names}
+            "ids": ids, "names": names, "codes": codes, "effect": effect, "base": base, "synergies": synergies}
+
+
+def _indicator_values(ix: dict, rows: np.ndarray, district: str, indicator: str) -> np.ndarray:
+    di, ki = ix["names"].index(district), ix["codes"].index(indicator)
+    city = len(ix["names"])
+    m, dc = ix["M"][rows], ix["DC"][rows]
+    values = ix["base"][di, ki] + ix["effect"][m, dc, di, ki].sum(axis=1)
+    for a, b, k, bonus in ix["synergies"]:
+        if k != ki:
+            continue
+        has_a = m == a
+        both = has_a.any(axis=1) & (m == b).any(axis=1)
+        where_a = (dc * has_a).sum(axis=1)
+        values[both & ((where_a == di) | (where_a == city))] += bonus
+    return np.clip(values, 0, 100)
 
 
 def _plan(ix: dict, row: int) -> list[dict]:
@@ -96,6 +111,7 @@ def _item(ix: dict, row: int) -> dict:
     weakest = int(d.argmin())
     return {"score": round(float(ix["score"][row]), 2), "cost": int(ix["cost"][row]), "rank": row + 1,
             "weakest_district": {"name": ix["names"][weakest], "d": round(float(d[weakest]), 2)},
+            "district_d": {name: round(float(v), 2) for name, v in zip(ix["names"], d)},
             "plan": _plan(ix, row)}
 
 
@@ -103,8 +119,8 @@ def total() -> int:
     return len(_index()["score"])
 
 
-def find_best(max_budget: float = 100, include=(), exclude=(), min_district_d: float | None = None,
-              n: int = 5, maximize: str = "score") -> list[dict]:
+def search_plans(max_budget: float = 100, include=(), exclude=(), min_district_d: float | None = None,
+                 min_indicators=(), maximize: str = "score", n: int = 5) -> dict:
     ix = _index()
     ids, names = ix["ids"], ix["names"]
     mask = ix["cost"] <= max_budget
@@ -121,10 +137,21 @@ def find_best(max_budget: float = 100, include=(), exclude=(), min_district_d: f
     if min_district_d is not None:
         mask &= ix["D"].min(axis=1) >= min_district_d
     rows = np.flatnonzero(mask)
+    for cond in min_indicators:
+        if not len(rows):
+            break
+        values = _indicator_values(ix, rows, cond["district"], cond["indicator"])
+        rows = rows[values >= cond["min"] - 1e-9]
     if maximize != "score" and maximize in names:
         di = names.index(maximize)
         rows = rows[np.argsort(-ix["D"][rows, di], kind="stable")]
-    return [_item(ix, int(r)) for r in rows[:n]]
+    return {"plans": [_item(ix, int(r)) for r in rows[:n]], "matched": int(len(rows)), "total": len(ix["score"]),
+            "complete": True}
+
+
+def find_best(max_budget: float = 100, include=(), exclude=(), min_district_d: float | None = None,
+              n: int = 5, maximize: str = "score", min_indicators=()) -> list[dict]:
+    return search_plans(max_budget, include, exclude, min_district_d, min_indicators, maximize, n)["plans"]
 
 
 def rank(plan: list[dict]) -> dict | None:
