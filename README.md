@@ -15,7 +15,7 @@ cd hack-5c60a040-terricon
 pip install -r requirements.txt
 python scripts/check_scenario.py
 python -m pytest -q
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
 Ключ OpenAI для проверки не нужен. Что должно получиться:
@@ -154,7 +154,8 @@ flowchart LR
 ## Технологии
 
 Python 3.11+ · Streamlit · NumPy · OpenAI Python SDK (по желанию) · pytest.
-Модели OpenAI (только с ключом): `gpt-5.6-sol` — текст разбора; `gpt-4o-mini-transcribe` — распознавание речи.
+Модели OpenAI (только с ключом): `gpt-5.6-sol` — агент и чат; `gpt-4o-mini` — короткий структурированный
+разбор сценария; `gpt-4o-mini-transcribe` — распознавание речи.
 Оформление — цвета государственного флага Казахстана: небесно-голубой (Pantone 3125) и золотой.
 
 ## Системные требования
@@ -168,7 +169,7 @@ Python 3.11+ · Streamlit · NumPy · OpenAI Python SDK (по желанию) ·
 
 ```bash
 pip install -r requirements.txt
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
 С Docker (Docker 24+):
@@ -186,7 +187,8 @@ docker run --rm -p 8501:8501 akim
 | Переменная | Зачем | По умолчанию |
 | --- | --- | --- |
 | `OPENAI_API_KEY` | текст разбора моделью и голос | не задан — работает шаблон |
-| `OPENAI_MODEL` | модель для текста | `gpt-5.6-sol` |
+| `OPENAI_MODEL` | основная модель агента и чата | `gpt-5.6-sol` |
+| `OPENAI_EXPLAIN_MODEL` | отдельная быстрая модель для разбора сценария | `gpt-4o-mini` |
 | `OPENAI_REASONING_EFFORT` | глубина рассуждения модели | `low` |
 | `OPENAI_STT_MODEL` | модель распознавания речи | `gpt-4o-mini-transcribe` |
 | `OPENAI_TIMEOUT_SECONDS` | сколько секунд ждать ответа модели | `30` |
@@ -247,7 +249,7 @@ docker run --rm -p 8501:8501 akim
   `~/.codex/sessions/2026/09/23/`): экран по заданиям В-1…В-5 и В-7 из `TASKS.md` — вариант В-7 сохранён в
   истории (коммит `af03cb5`), основным стал экран Claude. Коммитит Claude после проверки.
 - **Codex (OpenAI) у Дмитрия** — с 14:20 движок: проверка сценария одной командой (Д-8), рейтинг команд (Д-10),
-  живой режим модели (Д-11).
+  живой режим модели и проверка чисел (Д-11), отдельная быстрая модель для разбора сценария (Д-12).
 - Кто что сделал — по автору коммита: `git log --format='%h %ad %an %s' --date=format:'%H:%M'`.
 
 ## Команда

@@ -44,15 +44,21 @@ def _client():
     )
 
 
-def complete(messages: list[dict], *, json_mode: bool = False, tools: list[dict] | None = None):
+def complete(messages: list[dict], *, json_mode: bool = False, tools: list[dict] | None = None,
+             model: str | None = None, max_completion_tokens: int | None = None,
+             reasoning_effort: str | None = None):
     # temperature не передаём: у gpt-5.6-sol и gpt-6-astra вызов с ним падает
-    name = model_name()
+    name = (model or model_name()).strip()
     kwargs = {"model": name, "messages": messages}
-    if _is_reasoning(name):
+    if reasoning_effort is not None:
+        kwargs["reasoning_effort"] = reasoning_effort
+    elif _is_reasoning(name):
         # с инструментами Chat Completions принимает только reasoning_effort="none"
         kwargs["reasoning_effort"] = "none" if tools else os.getenv("OPENAI_REASONING_EFFORT", "low")
     if json_mode:
         kwargs["response_format"] = {"type": "json_object"}
     if tools:
         kwargs["tools"] = tools
+    if max_completion_tokens is not None:
+        kwargs["max_completion_tokens"] = max_completion_tokens
     return _client().chat.completions.create(**kwargs)

@@ -1,3 +1,6 @@
+import json
+from types import SimpleNamespace
+
 import pytest
 
 import akim
@@ -81,3 +84,22 @@ def test_model_answer_with_real_numbers_is_accepted(monkeypatch):
         "strengths": ["Score 56,54, прирост +3,98 к базе 52,56"], "risks": ["Нура — 52,96"],
         "consequences": [], "text": "Школа в Нуре даёт +1,45."})
     assert akim.explain(EXAMPLE)["mode"] == "llm"
+
+
+def test_explainer_disables_reasoning_by_default(monkeypatch):
+    monkeypatch.delenv("OPENAI_EXPLAIN_MODEL", raising=False)
+    monkeypatch.setattr(explainer.llm, "model_name", lambda: "gpt-5.6-sol")
+    seen = {}
+
+    def complete(messages, **kwargs):
+        seen.update(kwargs)
+        payload = {"strengths": [], "risks": [], "consequences": [], "text": "Короткий разбор."}
+        message = SimpleNamespace(content=json.dumps(payload, ensure_ascii=False))
+        return SimpleNamespace(choices=[SimpleNamespace(message=message)])
+
+    monkeypatch.setattr(explainer.llm, "complete", complete)
+    explainer._ask_model({"score": 56.54})
+    assert seen["model"] == "gpt-5.6-sol"
+    assert seen["json_mode"] is True
+    assert seen["max_completion_tokens"] == 350
+    assert seen["reasoning_effort"] == "none"

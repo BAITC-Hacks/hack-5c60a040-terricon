@@ -6,11 +6,14 @@ import akim.teams
 from streamlit.testing.v1 import AppTest
 
 
+APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
+
+
 def _app(monkeypatch, tmp_path) -> AppTest:
     monkeypatch.setenv("AKIM_NO_LLM", "1")
     monkeypatch.setattr(akim.approvals, "STORE", tmp_path / "approved.json")
     monkeypatch.setattr(akim.teams, "STORE", tmp_path / "teams.json")
-    return AppTest.from_file(str(Path(__file__).resolve().parent.parent / "app.py"), default_timeout=60).run()
+    return AppTest.from_file(APP_PATH, default_timeout=60).run()
 
 
 def _text(app) -> str:
