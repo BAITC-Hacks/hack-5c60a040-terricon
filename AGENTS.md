@@ -3,15 +3,16 @@
 Решение Виталия и Дмитрия 23.09, 13:35. Разделы ниже написаны под схему репетиции (экран React в `web/`,
 движок-сервер в `server/`, договорённость в `contract/`). Где они расходятся с этим блоком — действует этот блок.
 
-- **Одна программа Streamlit:** `pip install -r requirements.txt` → `streamlit run app.py`. Экран `app.py`
-  вызывает движок `akim/` обычным импортом Python — без сервера, HTTP и CORS. Экран ничего не считает.
+- **Экран — `web/` (с последнего часа):** `pip install -r requirements.txt` → `python web/server.py`. Сервер
+  `web/server.py` вызывает движок `akim/` обычным импортом Python, экран `web/index.html` получает ответы по
+  `/api/…` (контракт — `web/API.md`). Экран ничего не считает.
 - **Договорённость экрана и движка** — раздел «Контракт движка» в `TASKS.md`. Папок `server/`, `web/`, `contract/`
   нет и не создаём; `docker-compose.yml` не нужен — Docker одним `Dockerfile` в корне.
 - **Зоны:**
 
   | Кто | Файлы |
   | --- | --- |
-  | Виталий + его Codex | `app.py`, `tests/test_app.py` |
+  | Виталий + его Codex | `web/index.html`; Claude — `web/server.py`, `tests/test_web.py` |
   | Дмитрий + его Codex | `akim/`, `data/`, `scripts/`, остальные `tests/`, `Dockerfile`, `requirements.txt`, `.env.example` |
   | Claude (у Виталия) | `CASE.md`, `TASKS.md`, `README.md` |
 

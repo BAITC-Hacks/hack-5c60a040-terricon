@@ -48,7 +48,7 @@ cd hack-5c60a040-terricon
 pip install -r requirements.txt
 python scripts/check_scenario.py
 python -m pytest -q
-python -m streamlit run app.py
+python web/server.py
 ```
 
 No OpenAI key is needed for verification. Expected results:
@@ -63,26 +63,26 @@ No OpenAI key is needed for verification. Expected results:
 
 ## Three-minute demonstration: click by click
 
-The application starts with the organisers’ example. These values are checked by `tests/test_app.py`
+The application starts with the organisers’ example. These values are checked by `tests/test_web.py`
 and `scripts/check_scenario.py`. The Russian UI uses a comma as the decimal separator.
 
-1. **`Главное` (Main result):** the city index rises from 52.56 to 56.54, with 95 of 100 budget units spent.
-   Nura’s two critical indicators—schools at 38 and clinics at 35—have improved above the threshold, as shown above the district diagram.
+1. **Main result at the top:** the city index rises from 52.56 to 56.54, with 95 of 100 budget units spent.
+   Nura’s two critical indicators—schools at 38 and clinics at 35—have improved above the threshold, as shown in `Что получит город` (What the city gets).
 2. **Validation:** in `Решение 4 из 5` (Decision 4 of 5), select `Модернизация тепло- и водосетей`
    (heating and water network upgrades, cost 28). The application rejects the plan: 109 of 100 units.
-   Click `Вернуть пример организаторов` (Restore the organisers’ example).
-3. **Assistant request, tab 2:** the prefilled request asks to improve the plan without worsening air quality in Saryarka.
+   Click `Вернуть пример` (Restore the example).
+3. **Assistant request, section `Совет ИИ-агента`:** the prefilled request asks to improve the plan without worsening air quality in Saryarka.
    Click `Выполнить поручение` (Run request). The search covers all 694,395 plans. The checker rejects the highest-scoring
    plan, 57.24, because it worsens Saryarka’s air quality. A constrained search recommends 56.78.
    The condition costs 0.46 Score points relative to the unconstrained optimum.
 4. **`Найти улучшение` (Find an improvement):** replace clean fuel in Saryarka with light rail in Nura for
    a Score of 57.21, an increase of 0.67. Click `Применить улучшение` (Apply improvement).
-5. **Stress test, tab 3:** under `Городские события` (City events), click `Проверить сценарий` (Test scenario).
-   Winter smog reduces the improved plan’s Score from 57.21 to 55.60; the application suggests a replacement measure.
+5. **Stress test, section `Проверка на прочность`:** click `Проверить сценарий` (Test scenario).
+   Winter smog reduces the improved plan’s Score from 57.21 to 55.6; the application suggests a replacement measure.
    Below, `Найти самый устойчивый` (Find the most robust, about 6 seconds): the highest-scoring plan (57.24) falls to
    55.80 when school enrolment rises, while the most robust plan (57.07) keeps its worst case at 55.82; robustness
    costs 0.17 points.
-6. **Approve, tab 4:** only the user can click to approve the plan. The saved result shows a Score of 57.21.
+6. **Approve, section `Утвердить и рейтинг`:** only the user can click to approve the plan. The saved result shows a Score of 57.21.
 
 ## The problem and intended users
 
@@ -138,18 +138,19 @@ from the review was to use district colours and before/after comparisons.
 | Explanation | Strengths, risks and consequences; a calculation-based template without a key, or model-generated text checked against calculated numbers |
 | Improve a plan | The best single-measure replacement and its Score gain |
 | Constrained search | Search all 694,395 valid plans with budget limits, required or excluded measures, and minimum district scores |
-| Plan rank | Position among all 694,395 valid plans |
-| District report | Weak indicators and the measures that improve the district most |
-| Comparison and what-if | Compare two plans, or replace/add a measure and recalculate |
+| Plan rank | “Your plan is No. 566 of 694,395 valid plans; the best scores 57.24” — under the index, in the assistant’s answer and in the team leaderboard |
+| District profile | Click a district on the map or pick it in the list: score, rank from the bottom, weak indicators and the measures that would improve it most; the map also shows the district’s indicators before and after and the plan’s decisions that affect it |
+| Comparison and what-if | `Сохранить текущий как вариант A` (Save current as plan A), then compare with any new plan: index, district scores and differences; in the chat — “what if we remove clean fuel?” |
 | Scenario report | Download a Markdown report for the decision-maker |
 | Assistant request | Parse conditions, search, verify compliance and search again if necessary; show steps, a recommendation, an alternative and the cost of conditions |
 | Chat | Ask why a result occurred, about a district or the remaining budget; see which tools were used |
 | City events | Winter smog, heating network failure, rising school enrolment and spring flooding; show changed Scores, new critical indicators and a suggested replacement |
 | Priority sensitivity | Raise a direction’s weight by 20% and compare the current plan with the best plan under the new weights |
+| Budget frontier | Chart of the best achievable index at each spending level across all plans; the current plan is marked |
 | Most robust plan | A stress test of hypothetical scenarios: for all 694,395 plans, the worst Score across the four city events; the current plan, the highest-scoring plan and the most robust plan side by side, with the cost of robustness and a `Взять` (Take) button |
-| District diagram | District colours reflect scores; a table covers ten indicators, with animated before/after changes |
+| District map | OpenStreetMap district outlines; colour shows the change in district score; before/after; selecting a district shows its indicators and related decisions |
 | Team leaderboard | Submit a named team plan and compare Score, improvement and rank among all valid plans |
-| Voice requests | Speech recognition with an OpenAI key |
+| Voice requests | `Сказать голосом` (Speak) button: in-browser recording, speech recognition with district-name hints (OpenAI key required); the question goes to the assistant |
 | Approval | Only the user can approve a valid plan; the engine saves approval history |
 | One-command verification | `python scripts/check_scenario.py` runs 11 reference checks of the main workflow |
 
@@ -166,7 +167,7 @@ from the review was to use district colours and before/after comparisons.
 
 ```mermaid
 flowchart LR
-    U["Decision-maker"] -->|"Five decisions, question, request or voice"| S["Streamlit UI · app.py"]
+    U["Decision-maker"] -->|"Five decisions, question, request or voice"| S["Web UI · web/index.html + web/server.py"]
     S --> G{"Input checks"}
     G -->|"Reject requests to invent Scores or discuss politics"| S
     G --> K["Coordinator"]
@@ -185,9 +186,11 @@ flowchart LR
     S -->|"Apply and approve by button only"| U
 ```
 
-- `app.py` is the Streamlit interface. It displays engine results rather than calculating them. A short summary
-  and four headline values lead into four tabs: decisions and results, assistant advice, stress tests, approval and ranking.
-  `city_view.py` draws the district diagram with HTML and SVG, without external drawing libraries.
+- `web/index.html` is the interface: HTML and JavaScript without external libraries. It displays engine results
+  rather than calculating them: the main result and index at the top, five decisions on the left, the district map
+  (OpenStreetMap outlines) on the right, then assistant advice, stress tests, approval and ranking.
+  `web/server.py` is a Python standard-library server: each `/api/…` endpoint calls an engine function and rewrites
+  texts in plain language (contract: `web/API.md`).
 - `akim/` contains the engine: `rules.py` validates plans; `scoring.py` implements the formula; `optimizer.py`
   handles contributions and improvements; `search.py` indexes all 694,395 plans (about two seconds to build,
   with sub-millisecond indexed queries); `explainer.py` explains results and checks numbers; `agent.py` handles
@@ -195,7 +198,7 @@ flowchart LR
   implements search, checking and retry; `tools.py` provides reports, comparisons and what-if tools; `events.py`
   handles events and priority changes; `brief.py` exports reports; `approvals.py` stores approvals; `teams.py`
   handles ranking; `voice.py` transcribes speech; and `llm.py` connects to the model.
-- `scripts/check_scenario.py` checks the main workflow. `.streamlit/config.toml` defines the theme.
+- `scripts/check_scenario.py` checks the main workflow. `web/MAP_SOURCES.md` lists the map and landmark sources.
 - `data/akim.json` reproduces the challenge’s districts, indicators, weights, 14 measures, synergies and incompatibilities.
   `data/top_plans.json` stores precomputed top plans; regenerate it with `python scripts/precompute.py` (about 30 seconds).
 
@@ -231,7 +234,7 @@ Saved reports describe the layout and versions at verification time; old paths i
 
 ## Technology
 
-Python 3.11+ · Streamlit · NumPy · optional OpenAI Python SDK integration · pytest.
+Python 3.11+ · HTML and JavaScript interface without external libraries · Python standard-library server · NumPy · optional OpenAI Python SDK integration · pytest.
 
 With a key, `gpt-5.6-sol` powers the assistant, chat and scenario explanations, with observed replies of 4–15 seconds.
 `gpt-4o-mini-transcribe` handles speech recognition. The interface uses sky blue (Pantone 3125) and gold,
@@ -291,7 +294,7 @@ python -m pip install -r requirements.txt
 python -m pip check
 python scripts/check_scenario.py
 python -m pytest -q
-python -m streamlit run app.py
+python web/server.py
 ```
 
 To retain a complete verification report (commit, package versions, source/data hashes, output and exit codes), run
@@ -366,14 +369,15 @@ All five criteria are covered by `python scripts/check_scenario.py`.
 - The synthetic dataset was supplied by Astana Innovations, the challenge organiser.
 - **The team created the city events** in `data/events.json`: smog, heating failure, flooding and enrolment growth.
   Their indicator changes are hypothetical stress scenarios, not organiser-supplied observations.
-- The district diagram is illustrative, not a geographic map of Astana.
+- District map: OpenStreetMap outlines (© OpenStreetMap contributors, ODbL), adapted to the challenge’s five
+  districts: Sarayshyk is merged with Almaty, which is not the current administrative division. Landmark sources
+  and coordinates are in `web/MAP_SOURCES.md`; the silhouettes were drawn by Codex.
 - The related-project review used AI-assisted searches of public sources on 23 September.
 - The libraries are open source. Allowed version ranges are in `requirements.txt`; the team checked the following
   installed-package licences on 23 September:
 
 | Library | Version in the clean installation | Licence |
 | --- | --- | --- |
-| Streamlit | 1.64.0 | Apache-2.0 |
 | NumPy | 2.5.3 | BSD-3-Clause; some components use 0BSD, MIT or Zlib |
 | OpenAI Python SDK | 3.19.0 | Apache-2.0 |
 | pytest | 9.1.1 | MIT |
@@ -416,7 +420,10 @@ Findings became tasks, then fixes, then repeat checks.
 At 13:35, we jointly chose a single Streamlit application that calls the calculation code directly. This made
 integration and installation on another machine simpler. Claude on Vitaly’s machine prepared the first engine;
 Dmitry took over its maintenance at 14:20. The interface also evolved: after comparing alternatives, the team
-selected the main screen with a district diagram and a short explanation of the result.
+selected the main screen with a district diagram and a short explanation of the result. In the final hour, the
+Streamlit interface was replaced by the new `web/` interface: Claude wrote the server `web/server.py` and its tests;
+Vitaly’s Codex built `web/index.html` (model `gpt-6-astra`, sessions `01a0cd6c-0bdd-78b1-a0f5-b13f7aea16ce` and `01a0ce20-a3c7-7e92-b20e-57aa4f6cf405`). Calculations and the
+assistant come from the same engine in `akim/`.
 
 Dmitry began reducing scenario explanation time; Claude then continued the fixes and model comparison.
 Real API calls exposed failures that tests with mocked responses had not revealed. After comparing four models
