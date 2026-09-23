@@ -149,7 +149,7 @@ find_best, frontier, district_report, compare, what_if, stress_test, sensitivity
 
 ---
 
-## В-1. Сборка 5 решений — ⬜
+## В-1. Сборка 5 решений — ✅ Codex, проверено Claude 14:00
 
 ЦЕЛЬ: пользователь собирает 5 решений и видит бюджет и соблюдение правил.
 ГДЕ: `app.py`, `tests/test_app.py`.
@@ -159,7 +159,7 @@ find_best, frontier, district_report, compare, what_if, stress_test, sensitivity
 `errors[].message`; при `valid == True` — «Набор допустим». Тест (streamlit.testing.v1.AppTest): пример организаторов
 → «95 из 100» и «Набор допустим»; набор дороже 100 → причина «Бюджет превышен…».
 
-## В-2. Экран результата — ⬜
+## В-2. Экран результата — ✅ Codex, проверено Claude 14:00
 
 ГДЕ: `app.py`, `tests/test_app.py`.
 ГОТОВО: Score крупно и `delta` к 52.56; самый слабый район (`min_district`); число показателей ниже 40 и «было 2»;
@@ -170,6 +170,9 @@ find_best, frontier, district_report, compare, what_if, stress_test, sensitivity
 
 ГДЕ: `app.py`, `tests/test_app.py`.
 НЕЛЬЗЯ: менять набор без нажатия пользователя; считать что-то на экране.
+ВАЖНО (проверка В-1/В-2): выпадающие списки держат своё значение в `st.session_state["measure_i"]` и
+`st.session_state["district_i"]`. При «Применить…» обновить и `plan`, и эти ключи, затем `st.rerun()` — иначе
+экран вернёт старый набор.
 ГОТОВО:
 - блоки «сильные стороны / риски / последствия» из `akim.explain`, пометка «модель» или «шаблон (без ключа)»;
   «Улучшить сценарий» — замена и прирост из `akim.improve`, набор меняется только кнопкой «Применить»;
