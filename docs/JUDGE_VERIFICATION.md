@@ -18,13 +18,13 @@ LLM для проверки отключена через `AKIM_NO_LLM=1`; кл�
 
 ## Зависимости
 
-`requirements.txt` остаётся основным набором допустимых версий для рекомендованного Python 3.11+ и Docker. Дополнительный `requirements-tested-windows-py310.txt` фиксирует все установленные runtime/test-пакеты контрольной машины Windows с CPython 3.10.9. Это снимок конкретного окружения, а не универсальный lock-файл с хэшами и не изменение рекомендованной версии Python.
+`requirements.txt` — единственный рабочий список зависимостей для установки приложения. Вспомогательный [снимок Windows/Python 3.10.9](environments/windows-py310.constraints.txt) находится в `docs/environments/` и фиксирует версии пакетов контрольной машины. Он нужен только для повторения этой проверки; для обычной установки достаточно `requirements.txt`. Это снимок конкретного окружения, а не универсальный lock-файл с хэшами и не изменение рекомендованной версии Python 3.11+.
 
 Для воспроизведения именно дополнительной Windows-проверки на CPython 3.10.9 в новом виртуальном окружении:
 
 ```powershell
 py -3.10 -m venv .venv-judge
-.\.venv-judge\Scripts\python.exe -m pip install -r requirements.txt -c requirements-tested-windows-py310.txt
+.\.venv-judge\Scripts\python.exe -m pip install -r requirements.txt -c docs/environments/windows-py310.constraints.txt
 .\.venv-judge\Scripts\python.exe scripts/check_release.py --output docs/check_windows_py310.txt
 ```
 

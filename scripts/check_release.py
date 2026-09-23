@@ -75,7 +75,8 @@ def main(argv=None):
         note("\n=== SHA256 of tracked implementation and data ===")
         for name in sorted(tracked.stdout.rstrip("\n").split("\0")):
             path = ROOT / name
-            if name and (path.suffix in {".py", ".json", ".toml"} or name.startswith("requirements")) and path.is_file():
+            if name and (path.suffix in {".py", ".json", ".toml"} or name == "requirements.txt"
+                         or name.startswith("docs/environments/")) and path.is_file():
                 note(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {name}")
         run("Installed versions", [sys.executable, "-m", "pip", "list", "--format=freeze"])
         run("Dependency consistency", [sys.executable, "-m", "pip", "check"])

@@ -199,6 +199,27 @@ flowchart LR
 - `data/akim.json` reproduces the challenge’s districts, indicators, weights, 14 measures, synergies and incompatibilities.
   `data/top_plans.json` stores precomputed top plans; regenerate it with `python scripts/precompute.py` (about 30 seconds).
 
+## Repository layout
+
+The application has one installation requirements file: `python -m pip install -r requirements.txt`.
+
+| File or directory | Purpose |
+| --- | --- |
+| `app.py`, `city_view.py` | Application entry point and district visualisation |
+| `requirements.txt`, `Dockerfile` | Application dependencies and optional container startup |
+| `.env.example`, `.streamlit/` | Optional model configuration template and UI theme |
+| `akim/`, `data/` | Calculation engine, AI assistant and input data |
+| `scripts/`, `tests/`, `pytest.ini` | Verification, data preparation and test configuration |
+| `docs/task/` | Original challenge and organisers' dataset |
+| `docs/` | Research, verification instructions and saved reports |
+| `docs/environments/` | Environment snapshots for reproducing checks; not required for normal startup |
+| `README.md`, `README.en.md` | Russian and English instructions |
+| `AGENTS.md`, `CASE.md`, `TASKS.md` | Team rules, case description and task coordination; not application inputs |
+| `.gitignore`, `.dockerignore` | Exclude local files, environments and secrets from Git and the container |
+
+Local `.venv/`, `.venv-judge/`, `.env`, `__pycache__/` and `.pytest_cache/` are not published to GitHub.
+Saved reports describe the layout and versions at verification time; old paths in them are historical evidence.
+
 ## What the assistant can do, and what requires the user
 
 - **Automatically:** validate, calculate, search, explain and suggest replacements. These actions produce a draft plan.
