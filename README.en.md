@@ -273,6 +273,11 @@ python -m pytest -q
 python -m streamlit run app.py
 ```
 
+To retain a complete verification report (commit, package versions, source/data hashes, output and exit codes), run
+`python scripts/check_release.py --output docs/check_local.txt`.
+Success requires 11/11 scenario checks and the full pytest suite with no failures, errors or skips.
+[Verification details and the additional Windows dependency snapshot (Russian)](docs/JUDGE_VERIFICATION.md).
+
 With Docker 24 or newer:
 
 ```bash

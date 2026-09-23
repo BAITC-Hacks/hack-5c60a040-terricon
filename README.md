@@ -274,6 +274,11 @@ python -m pytest -q
 python -m streamlit run app.py
 ```
 
+Для проверки с полным отчётом (коммит, версии пакетов, хэши кода и данных, вывод и коды завершения):
+`python scripts/check_release.py --output docs/check_local.txt`.
+Успех требует 11/11 в сценарии и полного pytest без ошибок и пропусков.
+[Подробности проверки и дополнительный снимок зависимостей Windows](docs/JUDGE_VERIFICATION.md).
+
 С Docker (Docker 24+):
 
 ```bash
