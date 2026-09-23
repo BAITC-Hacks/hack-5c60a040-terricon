@@ -117,6 +117,15 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+С Docker (Docker 24+):
+
+```bash
+docker build -t akim .
+docker run --rm -p 8501:8501 akim
+```
+
+Экран — http://localhost:8501. С ключом OpenAI: `docker run --rm -p 8501:8501 --env-file .env akim`.
+
 Параметры окружения — необязательные. Скопируйте `.env.example` в `.env` и укажите ключ, если хотите текст
 модели и голос; без ключа работает всё остальное:
 
