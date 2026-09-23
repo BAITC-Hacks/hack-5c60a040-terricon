@@ -135,6 +135,8 @@ docker run --rm -p 8501:8501 akim
 | `OPENAI_MODEL` | модель для текста | `gpt-5.6-sol` |
 | `OPENAI_REASONING_EFFORT` | глубина рассуждения модели | `low` |
 | `OPENAI_STT_MODEL` | модель распознавания речи | `gpt-4o-mini-transcribe` |
+| `OPENAI_TIMEOUT_SECONDS` | сколько секунд ждать ответа модели | `30` |
+| `OPENAI_MAX_RETRIES` | сколько раз повторить вызов при сбое | `1` |
 
 ## Соответствие критериям задачи
 
