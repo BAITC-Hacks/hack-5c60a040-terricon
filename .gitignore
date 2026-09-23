@@ -1,7 +1,32 @@
+# секреты: .env лежит в КОРНЕ репо, в git не попадает; образец — .env.example
 .env
-__pycache__/
-*.pyc
-.pytest_cache/
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# python / node
 .venv/
 venv/
+__pycache__/
+*.py[cod]
+node_modules/
+dist/
+.vite/
+.pytest_cache/
+.ruff_cache/
+
+# базы и логи
+*.db
+*.sqlite
+*.sqlite3
+*.log
 var/
+
+# ОС / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.cursor/
+docker-compose.override.yml
