@@ -301,7 +301,7 @@ with lead:
 with tab_plan:
     with result_col:
         st.subheader("Что изменилось в городе")
-        components.html(city_html(result, base, data["indicators"]), height=930)
+        components.html(city_html(result, base, data["indicators"]), height=820)
         if not result["valid"]:
             st.info("Результат появится, когда набор будет соответствовать правилам (слева).")
         else:

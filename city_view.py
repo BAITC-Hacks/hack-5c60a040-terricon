@@ -7,6 +7,8 @@ import json
 
 ICONS = {"T1": "🚗", "T2": "🚌", "E1": "🌳", "E2": "💨", "S1": "🏫", "S2": "🏥",
          "B1": "🛡️", "B2": "🚦", "C1": "🔧", "C2": "📨"}
+SHORT = {"T1": "Дороги", "T2": "Транс&shy;порт", "E1": "Зелень", "E2": "Воздух", "S1": "Школы",
+         "S2": "Поли&shy;клиники", "B1": "Улицы", "B2": "Без ДТП", "C1": "ЖКХ", "C2": "Обра&shy;щения"}
 
 # Схема, а не точная карта: правый берег Есиля — север, левый — юг.
 SHAPES = {
@@ -29,7 +31,7 @@ def city_html(result: dict, base: dict, indicators: list[dict]) -> str:
             "name": name, "points": points, "x": x, "y": y,
             "before": before["d"], "after": after["d_after"] if after else before["d"],
             "indicators": [
-                {"code": item["code"], "name": item["name"], "icon": ICONS[item["code"]],
+                {"code": item["code"], "name": item["name"], "icon": ICONS[item["code"]], "short": SHORT[item["code"]],
                  "before": before["values"][item["code"]], "after": values_after[item["code"]]}
                 for item in indicators
             ],
@@ -52,13 +54,19 @@ TEMPLATE = """
     <text x="300" y="181" text-anchor="middle" font-size="12" fill="#2F7F92" font-style="italic">река Есиль</text>
     <g id="map"></g>
   </svg>
-  <div style="font-size:13px;color:#3D5A6C;margin:6px 0 10px">
-    Цвет района — его балл из 100: <b style="color:#C62828">красный</b> — отстаёт,
-    <b style="color:#B7791F">жёлтый</b> — средне, <b style="color:#2E7D32">зелёный</b> — хорошо.
-    Схема районов, не точная карта.<br>
-    Значки: 🚗 дороги · 🚌 общественный транспорт · 🌳 зелень · 💨 воздух · 🏫 школы и детсады · 🏥 поликлиники ·
-    🛡️ безопасность улиц · 🚦 безопасность на дорогах · 🔧 ЖКХ · 📨 ответы на обращения.
-    🔴 — острая проблема (ниже 40), ▲ — стало лучше. Наведите на значок — будет «было → стало».
+  <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:#3D5A6C;margin:8px 0 4px">
+    <span><b>Цвет района на схеме</b> — его балл из 100:</span>
+    <span><span style="display:inline-block;width:12px;height:12px;background:#E53935;border-radius:3px"></span> отстаёт</span>
+    <span><span style="display:inline-block;width:12px;height:12px;background:#FFB300;border-radius:3px"></span> средне</span>
+    <span><span style="display:inline-block;width:12px;height:12px;background:#43A047;border-radius:3px"></span> хорошо</span>
+    <span style="color:#6B8595">· схема, не точная карта</span>
+  </div>
+  <div style="font-size:15px;font-weight:600;margin:12px 0 2px">Показатели районов: сейчас после ваших решений</div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:#3D5A6C;margin:0 0 6px">
+    <span>Все от 0 до 100, больше — лучше.</span>
+    <span><span style="display:inline-block;width:12px;height:12px;background:#FDECEA;border:1px solid #E8A09A;border-radius:3px"></span> острая проблема — ниже 40</span>
+    <span><span style="display:inline-block;width:12px;height:12px;background:#FFF4D6;border:1px solid #E6C66A;border-radius:3px"></span> на грани — 40–45</span>
+    <span><b style="color:#1B7F4B">▲+10</b> — стало лучше</span>
   </div>
   <div id="cards"></div>
 </div>
@@ -96,20 +104,26 @@ const nodes = DATA.districts.map(d => {
 });
 const cards = document.getElementById('cards');
 const order = [...DATA.districts].sort((a,b)=>a.after-b.after);
-cards.innerHTML = order.map(d => {
+const cols = DATA.districts[0].indicators;
+const head = `<tr><th style="text-align:left;padding:2px 4px;font-size:12px;color:#3D5A6C">Район<br>балл: было → стало</th>` +
+  cols.map(c => `<th title="${c.name}" style="padding:2px 1px"><div style="font-size:17px">${c.icon}</div>
+    <div style="font-size:10.5px;color:#3D5A6C;font-weight:600;line-height:1.1;hyphens:manual;overflow-wrap:anywhere">${c.short}</div></th>`).join('') + `</tr>`;
+const rows = order.map(d => {
   const delta = d.after-d.before;
-  const chips = d.indicators.map(i => {
-    const [bg,fg] = level(i.after); const up = i.after>i.before;
-    const tip = `${i.name}: ${short(i.before)}${i.after!==i.before ? ' → '+short(i.after) : ''}`;
-    return `<span title="${tip}" style="display:inline-flex;align-items:center;gap:2px;background:${bg};color:${fg};
-      border:1px solid ${up?'#2E7D32':'transparent'};border-radius:8px;padding:1px 5px;margin:2px;font-size:13px">
-      ${i.icon}${i.after<40?'🔴':''}<b>${short(i.after)}</b>${up?'<span style="color:#2E7D32">▲</span>':''}</span>`;
+  const cells = d.indicators.map(i => {
+    const up = i.after-i.before; const [bg,fg] = level(i.after);
+    const plain = i.after>45;
+    return `<td title="${i.name}: ${short(i.before)}${up ? ' → '+short(i.after) : ''}" style="background:${plain?'#FFFFFF':bg};
+      color:${plain?'#0B2545':fg};border:${up?'2px solid #2E7D32':'1px solid #E3EEF1'};border-radius:6px;text-align:center;
+      padding:3px 1px;font-weight:${up?700:500};font-size:13px;line-height:1.15">${short(i.after)}${up ?
+      `<div style="font-size:10.5px;color:#1B7F4B;font-weight:700;white-space:nowrap">▲+${short(up)}</div>` : ''}</td>`;
   }).join('');
-  return `<div style="background:#fff;border:1px solid #D5E9EE;border-radius:10px;padding:6px 10px;margin-bottom:6px">
-    <div style="display:flex;justify-content:space-between;font-size:15px"><b>${d.name}</b>
-    <span>${fmt(d.before)} → <b>${fmt(d.after)}</b> <span style="color:${delta>0?'#1B7F4B':'#3D5A6C'};font-weight:700">
-    ${delta>=0?'+':'−'}${fmt(Math.abs(delta))}</span></span></div><div>${chips}</div></div>`;
+  return `<tr><th style="text-align:left;padding:2px 4px;white-space:nowrap;font-size:14px">${d.name}<br>
+    <span style="font-size:12px;font-weight:400">${fmt(d.before)} → <b>${fmt(d.after)}</b>
+    <b style="color:${delta>0?'#1B7F4B':'#3D5A6C'}">${delta>=0?'+':'−'}${fmt(Math.abs(delta))}</b></span></th>${cells}</tr>`;
 }).join('');
+cards.innerHTML = `<table style="width:100%;border-collapse:separate;border-spacing:3px;table-layout:fixed">
+  <colgroup><col style="width:22%">${cols.map(() => '<col>').join('')}</colgroup>${head}${rows}</table>`;
 function draw(t){
   nodes.forEach(({d,poly,val,crit}) => {
     const v = d.before + (d.after-d.before)*t;
