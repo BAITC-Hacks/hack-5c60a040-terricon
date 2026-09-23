@@ -1,11 +1,12 @@
 import json
 import random
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 import akim
-from akim import search
+from akim import search, voice
 
 EXAMPLE = [
     {"measure": "M7", "district": "Нура"},
@@ -91,3 +92,18 @@ def test_brief_and_frontier():
 def test_voice_needs_key():
     with pytest.raises(RuntimeError, match="ключом"):
         akim.transcribe(b"RIFF")
+
+
+def test_voice_hints_district_names(monkeypatch):
+    seen = {}
+
+    class Transcriptions:
+        def create(self, **kwargs):
+            seen.update(kwargs)
+            return SimpleNamespace(text=" Что с Нурой? ")
+
+    monkeypatch.setattr(voice.llm, "enabled", lambda: True)
+    monkeypatch.setattr(voice.llm, "_client",
+                        lambda: SimpleNamespace(audio=SimpleNamespace(transcriptions=Transcriptions())))
+    assert akim.transcribe(b"RIFF") == "Что с Нурой?"
+    assert "Нура" in seen["prompt"] and "Сарыарка" in seen["prompt"] and seen["language"] == "ru"
