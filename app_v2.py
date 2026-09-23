@@ -121,7 +121,8 @@ weakest_now = min(base["districts"], key=lambda district: district["d"])["name"]
 
 def measure_title(measure_id: str) -> str:
     measure = measure_by_id[measure_id]
-    return f"{DIRECTION_ICONS[measure['direction']]} {measure['name']}"
+    where = " · весь город" if measure["scope"] == "city" else ""
+    return f"{measure['cost']} · {DIRECTION_ICONS[measure['direction']]} {measure['name']}{where}"
 
 
 def measure_details(measure_id: str) -> str:
@@ -209,19 +210,21 @@ with tab_plan:
     choose_col, result_col = st.columns([1, 1.15], gap="large")
     with choose_col:
         st.subheader("Ваши 5 решений")
-        st.markdown('<div class="akim-step">Выберите меру и район — результат справа пересчитывается сразу.</div>',
+        st.markdown('<div class="akim-step">В каждом из 5 полей — одна мера. Число в начале строки — её цена из 100. <b>Районная мера</b> работает в районе, который вы выберете; <b>городская</b> (пометка «весь город») — сразу во всех районах, поэтому района у неё нет. Не больше двух мер одного направления. Результат справа пересчитывается сразу.</div>',
                     unsafe_allow_html=True)
         selected = []
         for index in range(5):
             with st.container(border=True):
                 measure_id = st.selectbox(
-                    f"Решение {index + 1}", measure_ids, format_func=measure_title, key=f"measure_{index}"
+                    f"Решение {index + 1} из 5: цена · мера", measure_ids, format_func=measure_title,
+                    key=f"measure_{index}"
                 )
                 if measure_by_id[measure_id]["scope"] == "district":
                     st.session_state.setdefault(f"district_{index}", weakest_now)
                     district = st.selectbox("Где: район", district_names, key=f"district_{index}")
                 else:
                     district = None
+                    st.markdown("**Где:** весь город — мера работает во всех районах сразу")
                 st.caption(measure_details(measure_id))
             selected.append({"measure": measure_id, "district": district})
         st.session_state["plan"] = selected
@@ -233,7 +236,8 @@ districts_after = {district["name"]: district for district in result["districts"
 with tab_plan:
     with choose_col:
         used, budget = result["budget_used"], result["budget"]
-        st.progress(min(used, budget) / budget, text=f"Бюджет: потрачено {used} из {budget}, осталось {budget - used}")
+        st.progress(min(used, budget) / budget, text=f"Бюджет: потрачено {used} из {budget}, "
+                    + (f"осталось {budget - used}" if used <= budget else f"перерасход {used - budget}"))
         if result["valid"]:
             st.success("Все правила соблюдены")
         else:
