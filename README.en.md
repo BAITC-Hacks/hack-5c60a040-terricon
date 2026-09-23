@@ -63,12 +63,12 @@ No OpenAI key is needed for verification. Expected results:
 
 ## Three-minute demonstration: click by click
 
-The application starts with the organisers’ example. These values are checked by `tests/test_web.py`
+The application starts with the organisers’ example. These values are checked by `tests/test_web.py`, `tests/test_events.py`, `tests/test_tools.py`
 and `scripts/check_scenario.py`. The Russian UI uses a comma as the decimal separator.
 
 1. **Main result at the top:** the city index rises from 52.56 to 56.54, with 95 of 100 budget units spent.
-   Nura’s two critical indicators—schools at 38 and clinics at 35—have improved above the threshold, as shown in `Что получит город` (What the city gets).
-2. **Validation:** in `Решение 4 из 5` (Decision 4 of 5), select `Модернизация тепло- и водосетей`
+   Nura’s two critical indicators—schools at 38 and clinics at 35—have improved above the threshold, as shown in `Результат по модели` (Model result).
+2. **Validation:** in the fourth decision (`Решение 4`), select `Модернизация тепло- и водосетей`
    (heating and water network upgrades, cost 28). The application rejects the plan: 109 of 100 units.
    Click `Вернуть пример` (Restore the example).
 3. **Assistant request, section `Совет ИИ-агента`:** the prefilled request asks to improve the plan without worsening air quality in Saryarka.
@@ -352,6 +352,7 @@ All five criteria are covered by `python scripts/check_scenario.py`.
 | Preserve Saryarka’s air quality | Checker rejects 57.24; constrained result 56.78; condition cost 0.46 |
 | Best plan costing at most 80 | 56.87, cost 72 |
 | Events applied to the example (56.54) | Smog 55.30; heating failure 55.26; flood 55.97; enrolment growth 56.10 |
+| Most robust plan | 57.07 (rank 11 by the index): worst case across events 55.82 vs 55.80 for the highest-scoring plan (57.24), +0.83 when school enrolment rises; robustness costs 0.17 points |
 
 ## Data and integrations
 

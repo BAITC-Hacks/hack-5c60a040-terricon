@@ -91,6 +91,9 @@ def test_agent_explain_improve_mission_chat(url):
 def test_stress_robust_and_search(url):
     status, smog = call(url, "/api/stress", {"plan": EXAMPLE, "event_id": "smog"})
     assert status == 200 and smog["score_after"] == 55.3 and smog["event"]["name"] == "Зимний смог"
+    improved = call(url, "/api/improve", {"plan": EXAMPLE})[1]["best"]["plan"]
+    status, improved_smog = call(url, "/api/stress", {"plan": improved, "event_id": "smog"})
+    assert (improved_smog["score_before"], improved_smog["score_after"]) == (57.21, 55.6)  # «Показ за 3 минуты», шаг 5
     status, robust = call(url, "/api/robust", {"plan": EXAMPLE})
     assert robust["robust"]["worst"] == 55.82 and robust["price"] == 0.17 and robust["yours"]["words"]
     status, top = call(url, "/api/top")
