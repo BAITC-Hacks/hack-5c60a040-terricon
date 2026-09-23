@@ -121,6 +121,34 @@ def test_llm_agent_accepts_number_from_tool_text(monkeypatch):
     assert "48,75" in r["reply"]
 
 
+def test_llm_agent_invented_measure_falls_back_to_rules(monkeypatch):
+    # 23.09 живой gpt-5.6-sol: «замена M5 в Сарыарке на M2 в Нуре», а расчёт советовал M3 — число верное, мера нет
+    monkeypatch.setattr(agent.llm, "enabled", lambda: True)
+    script = iter([_reply(calls=[_call("evaluate_plan", {"plan": EXAMPLE})]),
+                   _reply(content="Можно заменить M5 в Сарыарке на M2 в Нуре.")])
+    monkeypatch.setattr(agent.llm, "complete", lambda messages, **kw: next(script))
+    r = akim.chat("почему такой результат?", EXAMPLE)
+    assert r["mode"] == "rules" and "M2" in r["note"]
+
+
+def test_llm_agent_accepts_measure_from_facts(monkeypatch):
+    monkeypatch.setattr(agent.llm, "enabled", lambda: True)
+    script = iter([_reply(calls=[_call("improve_plan", {"plan": EXAMPLE})]),
+                   _reply(content="Можно заменить M5 в Сарыарке на M3 в Нуре.")])
+    monkeypatch.setattr(agent.llm, "complete", lambda messages, **kw: next(script))
+    r = akim.chat("как улучшить?", EXAMPLE)
+    assert r["mode"] == "llm"
+
+
+def test_llm_agent_explain_tool_does_not_call_model_again(monkeypatch):
+    monkeypatch.setattr(agent.llm, "enabled", lambda: True)
+    script = iter([_reply(calls=[_call("explain_plan", {"plan": EXAMPLE})]),
+                   _reply(content="Индекс вырос с 52,56 до 56,54: в Нуре решены острые проблемы.")])
+    monkeypatch.setattr(agent.llm, "complete", lambda messages, **kw: next(script))
+    r = akim.chat("почему такой результат?", EXAMPLE)
+    assert r["mode"] == "llm" and "56,54" in r["reply"]
+
+
 def test_llm_agent_preserves_parsed_mission_constraints(monkeypatch):
     monkeypatch.setattr(agent.llm, "enabled", lambda: True)
     script = iter([

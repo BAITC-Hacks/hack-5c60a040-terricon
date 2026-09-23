@@ -285,7 +285,8 @@ def _run_tool(name: str, args: dict, plan: list[dict] | None = None):
     if name == "evaluate_plan":
         return evaluate(args["plan"])
     if name == "explain_plan":
-        e = explain(args["plan"])
+        # Агент сам пишет ответ по фактам — второй вызов модели внутри инструмента не нужен (23.09: «почему» шло 31 с)
+        e = explain(args["plan"], use_model=False)
         return {k: e[k] for k in ("strengths", "risks", "consequences", "text")}
     if name == "improve_plan":
         return improve(args["plan"])
@@ -324,6 +325,20 @@ def _suggestion_from(name: str, result):
     return None
 
 
+_MEASURE_CODE = re.compile(r"\bM\d{1,2}\b")
+
+
+def unknown_measures(text: str, plan: list[dict], facts: list, message: str) -> list[str]:
+    """Меры, которые модель назвала сама: код M.. в ответе должен быть в наборе, в вопросе или в фактах инструментов.
+
+    Числа сверяет unknown_numbers; здесь — названия мер: 23.09 модель написала «замена на M2», а расчёт давал M3.
+    """
+    seen = json.dumps(facts, ensure_ascii=False, default=str) + " " + message
+    allowed = {item["measure"] for item in normalize_plan(plan)} | set(_MEASURE_CODE.findall(seen))
+    allowed |= {measure["id"] for measure in load_data()["measures"] if measure["name"] in seen}
+    return sorted(set(_MEASURE_CODE.findall(text)) - allowed, key=lambda code: int(code[1:]))
+
+
 def _llm_chat(message: str, plan: list[dict], history: list[dict]) -> dict:
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     for turn in history[-8:]:
@@ -346,6 +361,12 @@ def _llm_chat(message: str, plan: list[dict], history: list[dict]) -> dict:
                 log.warning("Ответ агента отклонён проверкой чисел: %s", bad)
                 fallback = _rules_chat(message, plan)
                 fallback["note"] = f"Ответ модели отклонён: числа {', '.join(bad)} не из расчёта."
+                return fallback
+            wrong = unknown_measures(text, plan, facts, message)
+            if wrong:
+                log.warning("Ответ агента отклонён проверкой мер: %s", wrong)
+                fallback = _rules_chat(message, plan)
+                fallback["note"] = f"Ответ модели отклонён: меры {', '.join(wrong)} не из расчёта."
                 return fallback
             out = _answer(text, "llm", [TOOL_TITLES.get(u, u) for u in used], suggestion, mode="llm")
             if last_mission:

@@ -225,7 +225,8 @@ def _ask_model(f: dict) -> dict:
     }
 
 
-def explain(plan: list[dict]) -> dict:
+def explain(plan: list[dict], use_model: bool = True) -> dict:
+    """use_model=False — только разбор по шаблону из чисел расчёта (агенту в чате: текст он пишет сам)."""
     res = evaluate(plan)
     if not res["valid"]:
         reasons = [e["message"] for e in res["errors"]]
@@ -234,7 +235,7 @@ def explain(plan: list[dict]) -> dict:
 
     f = facts(res, improve(plan))
     base = {**template(f), "suggestion": f.get("suggestion")}
-    if not llm.enabled():
+    if not use_model or not llm.enabled():
         return {"mode": "template", **base}
     try:
         answer = _ask_model(f)
