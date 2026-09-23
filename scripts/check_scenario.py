@@ -42,15 +42,33 @@ def check(label, action, expected):
         return False
 
 
+def rejects_invalid_approval():
+    try:
+        akim.approve(EXAMPLE[:4])
+    except ValueError:
+        return True
+    return False
+
+
 def main():
     checks = [
+        check("Данные: бюджет 100, 5 районов, 5 направлений", lambda: (
+            akim.load_data()["budget"], len(akim.load_data()["districts"]),
+            len(akim.load_data()["directions"])
+        ), (100, 5, 5)),
         check("База", lambda: akim.baseline()["score"], 52.56),
         check("Набор дороже 100 отклонён", lambda: (
             not akim.evaluate(OVER_BUDGET)["valid"]
             and "budget" in [e["code"] for e in akim.evaluate(OVER_BUDGET)["errors"]]
         ), True),
         check("Пример организаторов", lambda: akim.evaluate(EXAMPLE)["score"], 56.54),
+        check("Разбор без ключа: сильные стороны, риски, последствия", lambda: (
+            (r := akim.explain(EXAMPLE))["mode"] == "template"
+            and all(r[field] for field in ("strengths", "risks", "consequences"))
+        ), True),
         check("Улучшить", lambda: akim.improve(EXAMPLE)["best"]["score"], 57.21),
+        check("Лучший набор", lambda: akim.top(1)[0]["score"], 57.24),
+        check("Недопустимый набор нельзя утвердить", rejects_invalid_approval, True),
     ]
 
     try:
@@ -59,9 +77,12 @@ def main():
         checks.append(check("Поручение: не ухудшай воздух в Сарыарке",
                             lambda: mission["recommendation"]["score"], 56.78))
         checks.append(check("Цена условий", lambda: mission["price"], 0.46))
+        checks.append(check("Проверяющий сработал дважды", lambda: sum(
+            step["role"] == "Проверяющий" for step in mission["steps"]
+        ), 2))
     except Exception as exc:
         print(f"✗ Поручение: {type(exc).__name__}: {exc}")
-        checks.extend([False, False])
+        checks.extend([False, False, False])
 
     print(f"Итог: {sum(checks)}/{len(checks)} проверок")
     return 0 if all(checks) else 1
