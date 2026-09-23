@@ -24,13 +24,13 @@
 
 | Движок | Экран |
 | --- | --- |
-| Д-1 данные, правила, формула, перебор, тесты — 🔨 Claude | В-1 сборка 5 решений |
-| Д-2 разбор компромиссов со сверкой чисел — 🔨 Claude | В-2 экран результата |
-| Д-3 координатор агента — Дмитрий (если к 14:15 не включился — Claude) | В-3 разбор, «Улучшить», чат, голос |
-| Д-4 «Утвердить» и история — 🔨 Claude | В-4 сравнение, топ-5, «Утвердить» |
+| Д-1 данные, правила, формула, перебор, тесты — ✅ Claude | В-1 сборка 5 решений |
+| Д-2 разбор компромиссов со сверкой чисел — ✅ Claude | В-2 экран результата |
+| Д-3 координатор агента и цикл поручения — ✅ Claude | В-3 разбор, поручение агенту с журналом шагов, чат, голос |
+| Д-4 «Утвердить» и история — ✅ Claude | В-4 сравнение, топ-5, «Утвердить» |
 | Д-5 Docker и запуск без Docker — Дмитрий | В-5 подбор под цель, карта, паспорта, события |
 | Д-6 городские события и устойчивость — Дмитрий | |
-| Д-7 инструменты Аналитика и Стратега, паспорт сценария, голос — Claude | |
+| Д-7 инструменты Аналитика и Стратега, паспорт сценария, голос — ✅ Claude | |
 
 ## Контракт движка — экран вызывает только это
 
@@ -75,7 +75,14 @@ akim.stress_test(plan, event_id)   # {event, score_before, score_after, delta, n
 akim.sensitivity(plan)    # [{direction, name, score, best_score, best_plan}] — если вес направления выше на 20%
 akim.brief(plan)          # str, Markdown — паспорт сценария для акима
 akim.transcribe(audio_bytes)   # str; без ключа — RuntimeError с понятным текстом
-akim.chat(message, plan, history)   # {reply, mode: "llm"|"rules", intent, tools_used[], suggestion: plan | None}
+akim.chat(message, plan, history)   # {reply, mode: "llm"|"rules", intent, tools_used[], suggestion: plan | None,
+                          #  note?, mission? — если агент выполнял поручение, там журнал шагов (как у run_mission)}
+akim.parse_request(text, plan)      # поручение текстом → условия: {max_budget, keep[{measure, district}], exclude[],
+                          #  protect[{district, indicator}], min_district_d, maximize}
+akim.run_mission(plan, request)     # {status: "ok"|"infeasible", constraints[] (словами), steps[{role, action, result}],
+                          #  recommendation{score, cost, rank, weakest_district, district_d, plan} | None, alternative,
+                          #  free_best, price (цена условий в баллах), warnings[] (что ухудшится), suggestion, text, retried}
+akim.search_plans(...)    # как find_best, плюс min_indicators[{district, indicator, min}]; {plans, matched, total, complete}
 akim.approve(plan)        # {approved_at, score, delta, budget_used, plan, note}; недопустимый — ValueError с причиной
 akim.approved()           # [{approved_at, score, delta, budget_used, plan, note}]
 ```
@@ -159,15 +166,23 @@ find_best, frontier, district_report, compare, what_if, stress_test, sensitivity
 таблица «район × показатель» до/после — ниже 40 красным, 40–45 жёлтым, изменившиеся выделены; D до → после;
 вклад мер (`contributions`); синергии. Тест: пример → 56.54, +3.98, Нура 52.96.
 
-## В-3. Разбор агента, «Улучшить», чат, голос — ⬜
+## В-3. Разбор агента, поручение с журналом шагов, чат, голос — ⬜
 
 ГДЕ: `app.py`, `tests/test_app.py`.
-НЕЛЬЗЯ: менять набор без нажатия пользователя.
-ГОТОВО: блоки «сильные стороны / риски / последствия» из `akim.explain`, пометка «модель» или «шаблон (без ключа)»;
-«Улучшить сценарий» — замена и прирост из `akim.improve`, набор меняется только кнопкой «Применить»; чат
-`st.chat_input` + `st.chat_message` через `akim.chat`, под ответом — `tools_used`, при `suggestion` — кнопка
-«Применить предложение»; голос `st.audio_input` → `akim.transcribe` → в чат, без ключа — подпись «голос работает
-с ключом OpenAI». Тест без ключа: пометка «шаблон», «Улучшить» на примере даёт прирост больше 0.
+НЕЛЬЗЯ: менять набор без нажатия пользователя; считать что-то на экране.
+ГОТОВО:
+- блоки «сильные стороны / риски / последствия» из `akim.explain`, пометка «модель» или «шаблон (без ключа)»;
+  «Улучшить сценарий» — замена и прирост из `akim.improve`, набор меняется только кнопкой «Применить»;
+- **«Поручение агенту»** — поле текста («Улучши, но не ухудшай воздух в Сарыарке»; «Школу в Нуре сохрани, ЛРТ исключи,
+  потрать не больше 95») → `akim.parse_request` → показать понятые условия → `akim.run_mission(plan, request)` →
+  **журнал шагов** (`steps`: роль, действие, результат — по порядку, как лента статусов `st.status`), рекомендация и
+  альтернатива, «цена ваших условий» (`price`), «что ухудшится» (`warnings`); при `status == "infeasible"` — честное
+  «условия невыполнимы» без рекомендации; кнопка «Применить рекомендацию» ставит `suggestion` в набор;
+- чат `st.chat_input` + `st.chat_message` через `akim.chat`, под ответом — `tools_used`, при `mission` — тот же журнал
+  шагов, при `suggestion` — кнопка «Применить предложение», при `note` — серая подпись;
+- голос `st.audio_input` → `akim.transcribe` → текст в чат; без ключа — подпись «голос работает с ключом OpenAI».
+Тест без ключа: пометка «шаблон»; поручение «не ухудшай качество воздуха в Сарыарке» на примере даёт журнал, где
+Проверяющий дважды, и рекомендацию 56.78 с ценой условий 0.46.
 
 ## В-4. Сравнение, топ-5, «Утвердить» — ⬜
 
