@@ -226,3 +226,16 @@ Final acceptance: clean install PASS; pip check PASS; scenario 11/11;
 pytest 100 passed, 0 skipped, 0 failures, 0 errors; live browser mission 56.78 PASS.
 One pytest warning concerns write permission for its local cache; all tests executed.
 No deleted Streamlit files restored. Only this report is included in the acceptance commit.
+
+=== Recheck after synchronization at 17:42–17:43 ===
+Pulled origin/main a31a146de6dbc3fbe0fb8587d1b573fbea390fea before sending the report.
+Relative to f8fc304, the application paths akim/, web/, scripts/, requirements.txt and Dockerfile are unchanged.
+The new commit updates README wording and adds three assertions in tests/test_web.py for
+the improved scenario under smog: score_before=57.21, score_after=55.6.
+Repeated the entire suite in the same newly created environment:
+.venv-final-1745/Scripts/python.exe -m pytest -q
+100 passed, 1 warning in 35.32s
+exit_code=0; no skipped tests, no failures or errors.
+The warning remains the local pytest-cache write permission warning recorded above.
+POST /api/mission and its visible 56.78 result were checked on the same unchanged application code.
+FINAL_RESULT=PASS
