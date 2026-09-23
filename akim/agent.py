@@ -249,6 +249,8 @@ TOOLS = [
 SYSTEM_PROMPT = """Ты — помощник городского управленца в симуляторе «Аким на 5 часов» (условные данные, не реальная Астана).
 Бюджет 100, ровно 5 решений из 14 мер, 5 районов. Считают только инструменты — вызывай их, сам ничего не считай.
 Используй только числа из ответов инструментов и из сообщения пользователя. Не придумывай чисел.
+Если пользователь задаёт условие или приоритет («не ухудшай», «сохрани», «исключи», «не больше», «не ниже»),
+обязательно используй run_mission. improve_plan не умеет соблюдать такие условия.
 Ты не применяешь и не утверждаешь сценарий: предлагаешь, решает человек кнопками на экране.
 Не обсуждай реальных людей, политику и настоящий бюджет города. Отвечай по-русски, коротко, 2–5 предложений."""
 
@@ -327,7 +329,10 @@ def _llm_chat(message: str, plan: list[dict], history: list[dict]) -> dict:
     for turn in history[-8:]:
         if turn.get("role") in ("user", "assistant") and turn.get("content"):
             messages.append({"role": turn["role"], "content": str(turn["content"])})
-    messages.append({"role": "user", "content": f"{message}\n\nТекущий набор пользователя: "
+    request = parse_request(message, plan or [])
+    routing = ("\n\nВ запросе обнаружены условия. Обязательно вызови run_mission с этими условиями: "
+               f"{json.dumps(request, ensure_ascii=False)}" if request else "")
+    messages.append({"role": "user", "content": f"{message}{routing}\n\nТекущий набор пользователя: "
                                                 f"{json.dumps(normalize_plan(plan or []), ensure_ascii=False)}"})
     used, facts, suggestion, last_mission = [], [], None, None
     user_numbers = [float(x.replace(",", ".")) for x in re.findall(r"\d+(?:[.,]\d+)?", message)]
@@ -354,6 +359,8 @@ def _llm_chat(message: str, plan: list[dict], history: list[dict]) -> dict:
             name = call.function.name
             try:
                 args = json.loads(call.function.arguments or "{}")
+                if name == "run_mission" and request:
+                    args = request
                 result = _run_tool(name, args, plan)
                 suggestion = _suggestion_from(name, result) or suggestion
                 if name == "run_mission":

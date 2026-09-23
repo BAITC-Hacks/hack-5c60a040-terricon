@@ -46,6 +46,14 @@ def test_guard_catches_invented_number():
     assert explainer.unknown_numbers(fake, f) == ["61,3"]
 
 
+def test_guard_accepts_number_embedded_in_tool_text():
+    payload = {"strengths": [], "risks": [], "consequences": [], "text": "Воздух был 48,75."}
+    facts = {"tool_result": "Качество воздуха до мер: 48,75"}
+    assert explainer.unknown_numbers(payload, facts) == []
+    payload["text"] = "Воздух был 48,76."
+    assert explainer.unknown_numbers(payload, facts) == ["48,76"]
+
+
 def test_model_answer_with_invented_number_falls_back(monkeypatch):
     monkeypatch.setattr(explainer.llm, "enabled", lambda: True)
     monkeypatch.setattr(explainer, "_ask_model",

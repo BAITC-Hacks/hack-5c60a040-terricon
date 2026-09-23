@@ -109,6 +109,32 @@ def test_llm_agent_invented_number_falls_back_to_rules(monkeypatch):
     assert r["mode"] == "rules" and "61,3" in r["note"]
 
 
+def test_llm_agent_accepts_number_from_tool_text(monkeypatch):
+    monkeypatch.setattr(agent.llm, "enabled", lambda: True)
+    script = iter([
+        _reply(calls=[_call("run_mission", {"protect": [{"district": "Сарыарка", "indicator": "E2"}]})]),
+        _reply(content="Воздух в Сарыарке до мер — 48,75; рекомендация даёт Score 56,78."),
+    ])
+    monkeypatch.setattr(agent.llm, "complete", lambda messages, **kw: next(script))
+    r = akim.chat("улучши, но воздух в Сарыарке не ухудшай", EXAMPLE)
+    assert r["mode"] == "llm"
+    assert "48,75" in r["reply"]
+
+
+def test_llm_agent_preserves_parsed_mission_constraints(monkeypatch):
+    monkeypatch.setattr(agent.llm, "enabled", lambda: True)
+    script = iter([
+        _reply(calls=[_call("run_mission", {})]),
+        _reply(content="Рекомендация даёт Score 56,78, цена условий 0,46."),
+    ])
+    monkeypatch.setattr(agent.llm, "complete", lambda messages, **kw: next(script))
+    r = akim.chat("улучши, но воздух в Сарыарке не ухудшай", EXAMPLE)
+    assert r["mode"] == "llm"
+    assert r["mission"]["recommendation"]["score"] == 56.78
+    assert r["mission"]["price"] == 0.46
+    assert sum(s["role"] == "Проверяющий" for s in r["mission"]["steps"]) == 2
+
+
 def test_chat_handles_events_and_priorities():
     r = akim.chat("что будет при аварии на теплосети?", EXAMPLE)
     assert r["intent"] == "stress_test" and "Алматы" in r["reply"]

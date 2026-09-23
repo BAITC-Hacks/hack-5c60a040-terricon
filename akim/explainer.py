@@ -19,7 +19,9 @@ SYSTEM_PROMPT = """Ты — аналитик городского симулят
 Правила:
 1. Используй только числа из JSON, в том же виде. Ничего не считай, не складывай и не придумывай.
 2. Не упоминай реальных людей, политиков, партии и настоящий бюджет города.
-3. Пиши по-русски, коротко и конкретно, без жаргона: называй районы, меры и показатели по именам из JSON.
+3. Пиши по-русски, коротко и конкретно, без технических названий полей JSON. Говори «Score города» вместо
+score, «прирост» вместо delta, «показатели ниже 40» вместо critical_now, «снятые критические показатели»
+вместо resolved_critical. Называй районы, меры и показатели по понятным именам из JSON.
 4. Ответ — строго JSON: {"strengths": [до 3 строк], "risks": [до 3 строк], "consequences": [до 3 строк],
 "text": "итог в 2–3 предложениях"}."""
 
@@ -180,6 +182,10 @@ def _collect(obj, out: set) -> None:
     elif isinstance(obj, list):
         for v in obj:
             _collect(v, out)
+    elif isinstance(obj, str):
+        text = _GROUPED.sub("", _CODES.sub(" ", obj))
+        for token in _NUMBER.findall(text):
+            out.add(abs(float(token.replace(",", ".").replace("−", "-").lstrip("+-"))))
 
 
 def unknown_numbers(payload: dict, f: dict) -> list[str]:
