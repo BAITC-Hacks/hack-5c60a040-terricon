@@ -14,6 +14,10 @@ def _selectbox(app: AppTest, key: str):
     return next(widget for widget in app.selectbox if widget.key == key)
 
 
+def _has_callback_rerun_warning(app: AppTest) -> bool:
+    return any("Calling st.rerun() within a callback is a no-op" in warning.value for warning in app.warning)
+
+
 def test_example_plan_shows_budget_validity_and_result():
     app = _app()
 
@@ -57,6 +61,9 @@ def test_agent_explanation_and_improvement_require_explicit_apply():
 
     next(button for button in app.button if button.label == "Применить улучшение").click().run()
     assert app.session_state["plan"] == improvement["best"]["plan"]
+    assert "improvement" not in app.session_state
+    assert not any(button.label == "Применить улучшение" for button in app.button)
+    assert not _has_callback_rerun_warning(app)
     assert not app.exception
 
 
@@ -74,6 +81,11 @@ def test_mission_shows_retry_recommendation_and_price_of_constraints():
     assert len(checker_steps) == 2
     assert app.status
     assert any("Цена ваших условий" == metric.label and metric.value == "0.46 балла" for metric in app.metric)
+
+    app.button(key="mission_apply").click().run()
+    assert "mission_result" not in app.session_state
+    assert not any(button.label == "Применить рекомендацию" for button in app.button)
+    assert not _has_callback_rerun_warning(app)
     assert not app.exception
 
 
@@ -96,15 +108,19 @@ def test_top_five_and_take_plan_sync_all_widget_keys():
 
     top_metric = next(metric for metric in app.metric if metric.label == "Топ 1")
     assert top_metric.value == "57.24"
+    app.button(key="improve_plan").click().run()
+    assert "improvement" in app.session_state
     app.button(key="take_top_0").click().run()
 
     assert app.session_state["plan"] == top_plan["plan"]
+    assert "improvement" not in app.session_state
     for index, item in enumerate(top_plan["plan"]):
         assert app.session_state[f"measure_{index}"] == item["measure"]
         if item["district"] is not None:
             assert app.session_state[f"district_{index}"] == item["district"]
     score = next(metric for metric in app.metric if metric.label == "Astana Quality of Life Score")
     assert score.value == "57.24"
+    assert not _has_callback_rerun_warning(app)
     assert not app.exception
 
 
@@ -155,4 +171,61 @@ def test_invalid_plan_cannot_be_approved(monkeypatch, tmp_path):
     assert app.button(key="approve_plan").disabled is True
     assert not store.exists()
     assert approvals.approved() == []
+    assert not app.exception
+
+
+def test_explanation_is_cached_until_plan_changes(monkeypatch):
+    real_explain = akim.explain
+    calls = []
+
+    def tracked_explain(plan):
+        calls.append([item.copy() for item in plan])
+        return real_explain(plan)
+
+    monkeypatch.setattr(akim, "explain", tracked_explain)
+    app = _app()
+    assert len(calls) == 1
+
+    app.button(key="remember_a").click().run()
+    assert len(calls) == 1
+
+    app.button(key="take_top_0").click().run()
+    assert len(calls) == 2
+    assert calls[-1] == akim.top(1)[0]["plan"]
+    assert not app.exception
+
+
+def test_v5_target_search_respects_budget_and_passport_downloads():
+    app = _app()
+    assert [tab.label for tab in app.tabs] == [
+        "Подбор под цель",
+        "Районы",
+        "Городские события",
+        "Паспорт сценария",
+    ]
+
+    app.number_input(key="target_budget").set_value(80)
+    app.button(key="find_target").click().run()
+    results = app.session_state["target_results"]
+    assert len(results) == 5
+    assert all(item["cost"] <= 80 for item in results)
+
+    app.button(key="prepare_brief").click().run()
+    assert app.session_state["brief_content"].startswith("# Паспорт сценария")
+    downloads = app.get("download_button")
+    assert len(downloads) == 1
+    assert downloads[0].proto.label == "Скачать паспорт"
+    assert not app.exception
+
+
+def test_v5_district_report_and_city_event():
+    app = _app()
+    district_score = next(metric for metric in app.metric if metric.label == "D района")
+    assert district_score.value == "63.43"
+
+    app.button(key="stress_test").click().run()
+    stress = app.session_state["stress_result"]
+    assert stress["event"]["id"] == "smog"
+    assert stress["score_before"] == 56.54
+    assert any(metric.label == "Score после события" for metric in app.metric)
     assert not app.exception

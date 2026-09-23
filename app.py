@@ -58,6 +58,10 @@ def _district_table(districts: list[dict], indicator_codes: list[str]) -> str:
 
 def _apply_plan(plan: list[dict]) -> None:
     st.session_state["plan"] = [item.copy() for item in plan]
+    st.session_state.pop("improvement", None)
+    st.session_state.pop("mission_result", None)
+    st.session_state.pop("stress_result", None)
+    st.session_state.pop("brief_content", None)
     for index, item in enumerate(plan):
         st.session_state[f"measure_{index}"] = item["measure"]
         district_key = f"district_{index}"
@@ -65,7 +69,6 @@ def _apply_plan(plan: list[dict]) -> None:
             st.session_state.pop(district_key, None)
         else:
             st.session_state[district_key] = item["district"]
-    st.rerun()
 
 
 def _plan_caption(plan: list[dict], names: dict[str, dict]) -> str:
@@ -73,6 +76,25 @@ def _plan_caption(plan: list[dict], names: dict[str, dict]) -> str:
         f"{item['measure']} · {names[item['measure']]['name']} — {item.get('district') or 'весь город'}"
         for item in plan
     )
+
+
+def _district_map(districts: list[dict], show_after: bool) -> str:
+    cards = []
+    for district in districts:
+        value = district["d_after"] if show_after else district["d_before"]
+        if value < 50:
+            color = "#fecaca"
+        elif value < 55:
+            color = "#fef3c7"
+        else:
+            color = "#dcfce7"
+        after = f"{district['d_after']:.2f}" if district["d_after"] is not None else "—"
+        cards.append(
+            f'<div class="district-card" style="background:{color}">'
+            f'<strong>{html.escape(district["name"])}</strong>'
+            f'<span>D {district["d_before"]:.2f} → {after}</span></div>'
+        )
+    return '<div class="city-map">' + "".join(cards) + "</div>"
 
 
 def _render_mission(mission: dict, names: dict[str, dict], key_prefix: str) -> None:
@@ -145,6 +167,10 @@ st.markdown(
     .district-table th, .district-table td {border: 1px solid #d9dee8; padding: .55rem; text-align: center;}
     .district-table thead th {background: #f4f6fa;}
     .district-table tbody th {text-align: left; white-space: nowrap;}
+    .city-map {display: grid; grid-template-columns: repeat(3, minmax(130px, 1fr)); gap: .75rem; margin: 1rem 0;}
+    .district-card {border-radius: .75rem; border: 1px solid #d9dee8; padding: 1rem; min-height: 5.5rem;}
+    .district-card strong, .district-card span {display: block;}
+    .district-card span {margin-top: .5rem; font-size: .9rem;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -273,7 +299,12 @@ st.header("Разбор и рекомендации агента")
 if not result["valid"]:
     st.info("Соберите допустимый набор, чтобы получить разбор и рекомендации агента.")
 else:
-    explanation = akim.explain(st.session_state["plan"])
+    explanation_plan = [item.copy() for item in st.session_state["plan"]]
+    if st.session_state.get("explanation_plan") != explanation_plan:
+        with st.spinner("Агент готовит разбор…"):
+            st.session_state["explanation"] = akim.explain(explanation_plan)
+            st.session_state["explanation_plan"] = explanation_plan
+    explanation = st.session_state["explanation"]
     mode_label = "модель" if explanation["mode"] == "llm" else "шаблон (без ключа)"
     st.caption(f"Источник разбора: {mode_label}")
     if explanation.get("note"):
@@ -466,3 +497,175 @@ if approved_plans:
                 st.caption(approval["note"])
 else:
     st.caption("Утверждённых сценариев пока нет.")
+
+st.divider()
+st.header("Инструменты городского штаба")
+target_tab, districts_tab, events_tab, brief_tab = st.tabs(
+    ["Подбор под цель", "Районы", "Городские события", "Паспорт сценария"]
+)
+
+with target_tab:
+    st.subheader("Подбор сценария под ограничения")
+    filter_col, include_col, exclude_col, floor_col = st.columns(4)
+    max_budget = filter_col.number_input(
+        "Бюджет не больше",
+        min_value=0,
+        max_value=data["budget"],
+        value=data["budget"],
+        step=1,
+        key="target_budget",
+    )
+    required_measures = include_col.multiselect(
+        "Обязательно",
+        measure_ids,
+        format_func=lambda item_id: f"{item_id} · {measure_by_id[item_id]['name']}",
+        key="target_include",
+    )
+    excluded_measures = exclude_col.multiselect(
+        "Исключить",
+        measure_ids,
+        format_func=lambda item_id: f"{item_id} · {measure_by_id[item_id]['name']}",
+        key="target_exclude",
+    )
+    district_floor = floor_col.number_input(
+        "Ни один район не ниже",
+        min_value=0.0,
+        max_value=100.0,
+        value=0.0,
+        step=1.0,
+        key="target_floor",
+    )
+    if st.button("Найти варианты", key="find_target", type="primary"):
+        st.session_state["target_results"] = akim.find_best(
+            max_budget=max_budget,
+            include=required_measures,
+            exclude=excluded_measures,
+            min_district_d=district_floor if district_floor > 0 else None,
+            n=5,
+        )
+    target_results = st.session_state.get("target_results")
+    if target_results is not None:
+        if not target_results:
+            st.warning("При таких условиях допустимых сценариев не найдено.")
+        for target_index, target in enumerate(target_results):
+            with st.container(border=True):
+                result_col, target_budget_col, weak_target_col = st.columns(3)
+                result_col.metric("Score", f"{target['score']:.2f}")
+                target_budget_col.metric("Бюджет", str(target["cost"]))
+                weak_target_col.metric(
+                    "Слабейший район",
+                    target["weakest_district"]["name"],
+                    f"D {target['weakest_district']['d']:.2f}",
+                    delta_color="off",
+                )
+                st.caption(_plan_caption(target["plan"], measure_by_id))
+                st.button(
+                    "Взять",
+                    key=f"take_target_{target_index}",
+                    on_click=_apply_plan,
+                    args=(target["plan"],),
+                )
+
+    st.subheader("Бюджет → лучший Score")
+    st.line_chart(
+        akim.frontier(),
+        x="cost",
+        y="score",
+        x_label="Бюджет",
+        y_label="Лучший Score",
+    )
+
+with districts_tab:
+    st.subheader("Схема пяти условных районов")
+    st.caption("Это схема для сравнения показателей, а не географическая карта Астаны.")
+    map_mode = st.radio(
+        "Цвет районов",
+        ["До решений", "После решений"],
+        horizontal=True,
+        key="map_mode",
+        disabled=not result["valid"],
+    )
+    st.markdown(
+        _district_map(result["districts"], show_after=result["valid"] and map_mode == "После решений"),
+        unsafe_allow_html=True,
+    )
+
+    selected_district = st.selectbox("Паспорт района", district_names, key="district_report_select")
+    district_report = akim.district_report(
+        selected_district,
+        st.session_state["plan"] if result["valid"] else None,
+    )
+    report_score_col, report_place_col = st.columns(2)
+    report_score_col.metric("D района", f"{district_report['d']:.2f}")
+    report_place_col.metric("Место с конца", str(district_report["place_from_bottom"]))
+    st.write(district_report["profile"])
+    st.markdown("**Слабые показатели**")
+    st.table(
+        [
+            {"Код": weak["indicator"], "Показатель": weak["name"], "Значение": weak["value"]}
+            for weak in district_report["weak"]
+        ]
+    )
+    st.markdown("**Какие меры помогут сильнее всего**")
+    st.table(
+        [
+            {
+                "Мера": option["measure"],
+                "Название": option["name"],
+                "Стоимость": option["cost"],
+                "Прирост D": option["d_gain"],
+                "Прирост Score": option["score_gain"],
+            }
+            for option in district_report["best_measures"]
+        ]
+    )
+
+with events_tab:
+    st.subheader("Проверка неожиданным городским событием")
+    event_items = akim.events()
+    event_by_id = {event["id"]: event for event in event_items}
+    event_id = st.selectbox(
+        "Событие",
+        list(event_by_id),
+        format_func=lambda item_id: event_by_id[item_id]["name"],
+        key="event_id",
+    )
+    st.write(event_by_id[event_id]["description"])
+    if st.button("Проверить сценарий", key="stress_test", disabled=not result["valid"]):
+        st.session_state["stress_result"] = akim.stress_test(st.session_state["plan"], event_id)
+    stress_result = st.session_state.get("stress_result")
+    if stress_result:
+        before_col, after_col, event_delta_col = st.columns(3)
+        before_col.metric("Score до события", f"{stress_result['score_before']:.2f}")
+        after_col.metric("Score после события", f"{stress_result['score_after']:.2f}")
+        event_delta_col.metric("Изменение", f"{stress_result['delta']:+.2f}")
+        st.info(stress_result["text"])
+        if stress_result["new_critical"]:
+            st.warning("Появились новые показатели ниже 40.")
+        advice = stress_result.get("advice")
+        if advice:
+            st.button(
+                "Применить совет",
+                key="apply_event_advice",
+                on_click=_apply_plan,
+                args=(advice["plan"],),
+            )
+
+with brief_tab:
+    st.subheader("Паспорт сценария для акима")
+    st.caption("Документ собирается из проверенных расчётов движка и текущего разбора агента.")
+    if st.button("Подготовить паспорт", key="prepare_brief", disabled=not result["valid"]):
+        with st.spinner("Формируем паспорт сценария…"):
+            st.session_state["brief_content"] = akim.brief(st.session_state["plan"])
+            st.session_state["brief_plan"] = [item.copy() for item in st.session_state["plan"]]
+    brief_content = st.session_state.get("brief_content")
+    if brief_content:
+        st.download_button(
+            "Скачать паспорт",
+            data=brief_content,
+            file_name="akim-scenario.md",
+            mime="text/markdown",
+            key="download_brief",
+        )
+        with st.expander("Предпросмотр паспорта"):
+            st.markdown(brief_content)
