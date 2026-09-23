@@ -208,9 +208,9 @@ The application has one installation requirements file: `python -m pip install -
 
 | File or directory | Purpose |
 | --- | --- |
-| `app.py`, `city_view.py` | Application entry point and district visualisation |
+| `web/` | Interface: `index.html` (district map, decisions, assistant), `server.py` (`/api/…` endpoints to the engine), `API.md`, map sources |
 | `requirements.txt`, `Dockerfile` | Application dependencies and optional container startup |
-| `.env.example`, `.streamlit/` | Optional model configuration template and UI theme |
+| `.env.example` | Optional model configuration template |
 | `akim/`, `data/` | Calculation engine, AI assistant and input data |
 | `scripts/`, `tests/`, `pytest.ini` | Verification, data preparation and test configuration |
 | `docs/task/` | Original challenge and organisers' dataset |
