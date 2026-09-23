@@ -6,7 +6,7 @@ from .data import direction_names, district_names, indicator_weights, load_data
 from .explainer import fmt, fmt_signed
 from .rules import normalize_plan, validate
 from .scoring import _evaluate_raw, _known_items
-from .search import best_variant
+from .search import best_variant, robust_variant
 
 EVENTS_PATH = Path(__file__).resolve().parent.parent / "data" / "events.json"
 PRIORITY_BOOST = 1.2
@@ -78,6 +78,34 @@ def stress_test(plan: list[dict], event_id: str) -> dict:
     return {"event": ev, "score_before": before, "score_after": after, "delta": round(after - before, 2),
             "n_crit_after": hit["n_crit"], "new_critical": new_critical, "advice": advice, "best_plan": best,
             "text": text}
+
+
+def _robust_summary(plan: list[dict]) -> dict:
+    items = normalize_plan(plan)
+    score = round(_evaluate_raw(_known_items(items))["score"], 2)
+    by_event = []
+    for ev in events():
+        hit = _evaluate_raw(_known_items(items), ev["shocks"])
+        by_event.append({"event": ev["name"], "score": round(hit["score"], 2), "n_crit": hit["n_crit"]})
+    worst = min(by_event, key=lambda e: e["score"])
+    return {"plan": items, "score": score, "by_event": by_event, "worst": worst["score"],
+            "worst_event": worst["event"], "loss": round(score - worst["score"], 2),
+            "max_crit": max(e["n_crit"] for e in by_event)}
+
+
+def robustness(plan: list[dict] | None = None) -> dict:
+    """Стресс-тест условных сценариев: лучший по индексу набор против самого устойчивого — с лучшим худшим
+    индексом на всех городских событиях. Не вероятностный прогноз: события придуманы командой."""
+    best = _robust_summary(best_variant()["plan"])
+    found = robust_variant([ev["shocks"] for ev in events()])
+    robust = {**_robust_summary(found["plan"]), "rank": found["rank"]}
+    items = normalize_plan(plan or [])
+    yours = _robust_summary(items) if plan and not validate(items) else None
+    gains = [{"event": b["event"], "diff": round(r["score"] - b["score"], 2)}
+             for b, r in zip(best["by_event"], robust["by_event"])]
+    return {"events": [ev["name"] for ev in events()], "best": best, "robust": robust, "yours": yours,
+            "same": best["plan"] == robust["plan"], "price": round(best["score"] - robust["score"], 2),
+            "gain": round(robust["worst"] - best["worst"], 2), "top_gain": max(gains, key=lambda g: g["diff"])}
 
 
 def _boosted_weights(direction: str) -> dict:

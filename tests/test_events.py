@@ -36,6 +36,18 @@ def test_best_variant_without_changes_is_official_best():
     assert akim.best_variant()["score"] == 57.24
 
 
+def test_robustness_best_vs_most_robust():
+    r = akim.robustness(EXAMPLE)
+    best, robust, yours = r["best"], r["robust"], r["yours"]
+    assert (best["score"], best["worst"], best["worst_event"]) == (57.24, 55.8, "Рост числа школьников")
+    assert (robust["score"], robust["worst"], robust["rank"]) == (57.07, 55.82, 11)
+    assert robust["worst"] >= max(best["worst"], yours["worst"]) and akim.validate(robust["plan"]) == []
+    assert (yours["score"], yours["worst"], yours["worst_event"]) == (56.54, 55.26, "Авария на теплосети")
+    assert r["price"] == 0.17 and r["gain"] == 0.02
+    assert r["top_gain"] == {"event": "Рост числа школьников", "diff": 0.83}
+    assert akim.robustness(EXAMPLE[:4])["yours"] is None
+
+
 def test_sensitivity_covers_all_directions():
     rows = akim.sensitivity(EXAMPLE)
     assert [r["direction"] for r in rows] == ["transport", "ecology", "social", "safety", "services"]

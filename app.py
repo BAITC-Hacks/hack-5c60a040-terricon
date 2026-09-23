@@ -543,6 +543,45 @@ with tab_check:
                 st.success(f"Совет на этот случай: {swap_words(advice['replace'], advice['with'])} — "
                            f"индекс при событии {fmt(advice['score'])} ({signed(advice['delta'])}).")
                 st.button("Применить совет", key="stress_apply", on_click=apply_plan, args=(advice["plan"],))
+
+        st.markdown("**Самый устойчивый набор** — у кого худший исход на всех четырёх событиях лучше всех")
+        st.caption("Стресс-тест условных сценариев: события придуманы командой, это не прогноз вероятности.")
+        robust_key = plan_key(plan)
+        if st.button("Найти самый устойчивый — около 6 секунд", key="run_robust", disabled=not result["valid"]):
+            with st.spinner("Проверяем все 694 395 наборов на четырёх событиях…"):
+                st.session_state["robust_result"] = akim.robustness(plan)
+                st.session_state["robust_plan"] = robust_key
+        robust = st.session_state.get("robust_result") if st.session_state.get("robust_plan") == robust_key else None
+        if robust:
+            head = "".join(f"<th>{esc(name)}</th>" for name in robust["events"])
+            body = []
+            for title, row in (("Ваш сценарий", robust["yours"]), ("Лучший по индексу", robust["best"]),
+                               ("Самый устойчивый", robust["robust"])):
+                if not row:
+                    continue
+                cells = "".join(
+                    f'<td style="{"background:#FDECEA;font-weight:700" if item["score"] == row["worst"] else ""}">'
+                    f"{fmt(item['score'])}</td>" for item in row["by_event"]
+                )
+                body.append(f"<tr><th>{title}</th><td><b>{fmt(row['score'])}</b></td>{cells}"
+                            f"<td><b>{fmt(row['worst'])}</b></td><td>{signed(-row['loss'])}</td></tr>")
+            st.markdown(
+                f'<div class="akim-table"><table><thead><tr><th>Набор</th><th>Обычный год</th>{head}'
+                f"<th>Худший</th><th>Потеря</th></tr></thead><tbody>{''.join(body)}</tbody></table></div>",
+                unsafe_allow_html=True,
+            )
+            if robust["same"]:
+                st.success("Лучший по индексу набор и так самый устойчивый.")
+            else:
+                top = robust["top_gain"]
+                st.info(
+                    f"Устойчивость стоит {fmt(robust['price'])} балла в обычный год: самый устойчивый — "
+                    f"{robust['robust']['rank']}-й по индексу. Взамен худший исход {fmt(robust['robust']['worst'])} "
+                    f"против {fmt(robust['best']['worst'])}, а при событии «{top['event']}» — {signed(top['diff'])}. "
+                    f"Состав: {plan_words(robust['robust']['plan'])}."
+                )
+                st.button("Взять самый устойчивый", key="take_robust", on_click=apply_plan,
+                          args=(robust["robust"]["plan"],))
     with district_tab:
         st.markdown(
             '<div class="akim-step">Выберите район — движок покажет его слабые места и решения с самой '

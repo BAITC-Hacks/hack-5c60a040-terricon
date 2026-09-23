@@ -77,6 +77,11 @@ def test_event_search_and_chat_mission_follow_current_conditions(monkeypatch, tm
     assert [b for b in app.button if b.key.startswith("chat_apply_")]
     app.selectbox(key="district_4").set_value("Есиль").run()
     assert not [b for b in app.button if b.key.startswith("chat_apply_")]
+
+    app.button(key="run_robust").click().run()
+    assert any("Самый устойчивый" in m.value and "55,82" in m.value for m in app.markdown)
+    app.button(key="take_robust").click().run()
+    assert "57,07" in next(m.value for m in app.markdown if "Главное" in m.value)
     assert not app.exception
 
 

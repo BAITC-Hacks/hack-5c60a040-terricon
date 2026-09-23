@@ -105,17 +105,27 @@ def _variant_scores(shifts: tuple = (), weights: tuple = ()) -> np.ndarray:
     return _score_rows(ix, base, w)[0]
 
 
+def _shifts(ix: dict, shocks) -> tuple:
+    return tuple((ix["names"].index(s["district"]), ix["codes"].index(s["indicator"]), float(s["change"]))
+                 for s in shocks)
+
+
 def best_variant(shocks=(), weights: dict | None = None) -> dict:
     """Лучший набор, если сдвинуть исходные показатели (событие) или веса (приоритеты)."""
     ix = _index()
-    shifts = tuple((ix["names"].index(s["district"]), ix["codes"].index(s["indicator"]), float(s["change"]))
-                   for s in shocks)
     w = tuple(float(weights[k]) for k in ix["codes"]) if weights else ()
-    scores = _variant_scores(shifts, w)
+    scores = _variant_scores(_shifts(ix, shocks), w)
     row = int(scores.argmax())
     item = _item(ix, row)
     item["score"] = round(float(scores[row]), 2)
     return item
+
+
+def robust_variant(shock_lists: list) -> dict:
+    """Набор с лучшим худшим индексом по всем событиям (максимум минимума) среди всех допустимых наборов."""
+    ix = _index()
+    worst = np.vstack([_variant_scores(_shifts(ix, shocks)) for shocks in shock_lists]).min(axis=0)
+    return _item(ix, int(worst.argmax()))
 
 
 def _indicator_values(ix: dict, rows: np.ndarray, district: str, indicator: str) -> np.ndarray:
