@@ -1,0 +1,218 @@
+Offline acceptance report
+started_utc=2026-09-23T12:10:50.120555+00:00
+python=3.10.9; platform=Windows-10-10.0.19044-SP0
+
+=== Git commit ===
+cf7d2c2a46584d033323a052562baf830d4423c4
+exit_code=0; seconds=0.09
+
+=== Tracked working-tree changes (empty means clean) ===
+
+exit_code=0; seconds=0.11
+
+=== Tracked files ===
+.dockerignore
+.env.example
+.gitignore
+.streamlit/config.toml
+AGENTS.md
+CASE.md
+Dockerfile
+README.en.md
+README.md
+TASKS.md
+akim/__init__.py
+akim/agent.py
+akim/approvals.py
+akim/brief.py
+akim/data.py
+akim/events.py
+akim/explainer.py
+akim/llm.py
+akim/mission.py
+akim/nlu.py
+akim/optimizer.py
+akim/rules.py
+akim/scoring.py
+akim/search.py
+akim/teams.py
+akim/tools.py
+akim/voice.py
+app.py
+city_view.py
+data/akim.json
+data/events.json
+data/top_plans.json
+docs/JUDGE_VERIFICATION.md
+docs/RESEARCH_2026-09-23.md
+docs/check_dmitry_1615.txt
+docs/task/akim_dataset.md
+docs/task/akim_task.md
+messages/2026-09-23_1534_dmitry_engine-ready.md
+messages/2026-09-23_1701_dmitry-judge-audit.md
+messages/README.md
+pytest.ini
+requirements-tested-windows-py310.txt
+requirements.txt
+scripts/check_release.py
+scripts/check_scenario.py
+scripts/precompute.py
+tests/conftest.py
+tests/test_agent.py
+tests/test_app.py
+tests/test_approvals.py
+tests/test_calculation_audit.py
+tests/test_check_scenario.py
+tests/test_events.py
+tests/test_explainer.py
+tests/test_llm.py
+tests/test_optimizer.py
+tests/test_release_check.py
+tests/test_rules.py
+tests/test_scoring.py
+tests/test_teams.py
+tests/test_tools.py
+
+exit_code=0; seconds=0.08
+
+=== SHA256 of tracked implementation and data ===
+52f67d95bc083ecb56ff0341813ac801dbd66c62ad78f5bf0d2442cfee5f01fe  .streamlit/config.toml
+bb33df7e9d288eb8a8ec2d404107d6e96abc94c84d5b5aed98657131448b3afe  akim/__init__.py
+e7f5cf0fc7a6c4406956dca75e857cbac41206611939cb863dcd7c59eae53e15  akim/agent.py
+7bfe55624d027c0340bddd9fb603494bd1ef2d2ea639b27c6bd58c27f7c5a9c9  akim/approvals.py
+12d0b96c39dd11682434bea105a9bbafec933246a91650bd306daa6d046616ed  akim/brief.py
+286c1279c9a5678260ef5f4e1fdd7b66a15de23ad2523a15740f09e717af1a2a  akim/data.py
+859d701a3bfcd5af53dc0d54ac1f6a9e6c90f75d5eb4d610a00df63abd4f84ba  akim/events.py
+d1823f85a34c973aed48f16bc854f0eeb62f0406c5d866f0eacda06818295609  akim/explainer.py
+5864a407d2701893736a706778d5c8197baa2f12b787ee8f668e6b69ab03b93a  akim/llm.py
+879658768406f11125f4c7deb84a23e0e1e736fb9aeddd37bab72ff0180d695b  akim/mission.py
+a8f95a7cf920fabe24ed3e02ecaba55d261c7690d49c67088909eb341ef67a7e  akim/nlu.py
+68cb7f572b29dbcda1f8ec3ed3750aad4bb602d282ea7a3e7abb5094bfb3d83b  akim/optimizer.py
+cab87999ed5f13340ef9b35b9f0a2651ac4b9ab677f9d45a0d34b2da61b819a9  akim/rules.py
+8a13739930f40674a8387ff5ff5cb4767b862c44c54e8f96b7f3fd153d93b655  akim/scoring.py
+b947a982796191c61dcadc3922197d9abdb69f81fbf5e28598112fe00a4e2c66  akim/search.py
+5253779e7140cc12040ea5e38dd1d2163ba2d4f8ec2e8a75de9038059c6e3a94  akim/teams.py
+d1e12de959531d7cc278ea94d99b9d19c93288751e2e6db81db3ca10298ca971  akim/tools.py
+887fda275b784686aff6542a579cfca40751169f9648e4732358ab17bb410b17  akim/voice.py
+984fe4f31d872e7a9c5f66c413b440bc41f7b714e0c3996e1303af42c91238ba  app.py
+bdc02ac93aaffa158b22eb506dd4ecf2c3992b8a04e76f7751c3da65a8f0d3fb  city_view.py
+093d501d294907dde9a75c925a50768f9b18583f26864dfeac16e33ef868ccc0  data/akim.json
+b212ab06e4b82463198381547065469f05c759a5b3f1bfca478c56c3ea15ac03  data/events.json
+14da4bcfb062eef4c59a1811c4bc2a2a364c2f587ad3938bfd640d752be717b3  data/top_plans.json
+db1edd61681916a7d36fce607904682ddf4e325a80f23f984ab47d4368e24ec2  requirements-tested-windows-py310.txt
+c4891e8da6da9725c74755dddf31c47f8427cf178ab0e38dfa1b59284044a5ad  requirements.txt
+d0d77be38412f7771d62cc81b7856ead3747635b41cebc06c4418c6a644fe29e  scripts/check_release.py
+a9a96e4c32713e8911b1dfaa1a93471722e217d12f955776ec7f05c0e0b9e64d  scripts/check_scenario.py
+27ec5589e143b27c5ee540e3c000ab91b954481ee8015f516e10a48ccf38908d  scripts/precompute.py
+b512df6f7c3e3f632340f731adb737c7a86e3af5025074927ed897add1d3c679  tests/conftest.py
+5317f122594d971e413c1702d965cb6306c8ec2e98a55b253e8eb894c6da68bd  tests/test_agent.py
+7e6352b681af3e73d718b2ac5d1c3d506703bbd7f19fabf578e07228f2977c13  tests/test_app.py
+defa86b7d8c5c3c586e4d0169b4dd60da03b0cd0edd633ccd8dc0da308b3639b  tests/test_approvals.py
+3ebf2778bf7c3eec97daa7ba2b303316fc9e850308a68efe033650533038c29e  tests/test_calculation_audit.py
+55044abb503f8c6f60f540a6da3591f8e387ef71e2565b7658f5add73020a82c  tests/test_check_scenario.py
+572a6b5725e4fbe13d7990019746b6764b9c4cc53dacb510b2fa8a8903dd18dd  tests/test_events.py
+deb5f669a86bd847212998770867dd622f86585e008ebd78354d3c879148651c  tests/test_explainer.py
+e78b199318f7696a0bd9da12749ec2ebac94e9afa8b74d7ecaf19e97e7cd775a  tests/test_llm.py
+1088c4eb1a56c62a6c7c6713ee632f8625508e3e82d7b118436b7f89a8b098a1  tests/test_optimizer.py
+93b1235933696370a15ab99debd82e8afcb05e029acfef29ad43269cecadec26  tests/test_release_check.py
+834f161049fe7914e26a4548e3e66eadb60e4bc357d5ee6f999ee19be6d91b52  tests/test_rules.py
+a58a4db5268f0481e96bfbca457fed3f53085fde752a094cc640e8b6d95c6291  tests/test_scoring.py
+b6286fd69bfe5822d46d49d4cec5941956c2d4ac5efcdd0d063d9a0680fed85b  tests/test_teams.py
+494e22686702d662ea3c9a62f285b96b69694b22ee4434bd058d4a0293666a79  tests/test_tools.py
+
+=== Installed versions ===
+altair==6.2.2
+annotated-types==0.8.0
+anyio==4.15.1
+attrs==26.1.0
+certifi==2026.7.22
+charset-normalizer==3.5.1
+click==8.5.0
+colorama==0.4.6
+exceptiongroup==1.3.1
+h11==0.16.0
+httpcore2==2.13.1
+httptools==0.8.0
+httpx2==2.13.1
+idna==3.20
+iniconfig==2.3.0
+itsdangerous==2.2.0
+Jinja2==3.1.6
+jiter==0.17.0
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+MarkupSafe==3.0.3
+narwhals==2.26.0
+numpy==2.2.6
+openai==3.19.0
+packaging==26.3
+pandas==2.3.3
+pillow==12.3.0
+pip==22.3.1
+pluggy==1.6.0
+protobuf==7.36.2
+pyarrow==25.0.1
+pydantic==2.13.5
+pydantic_core==2.46.5
+pydeck==0.9.3
+Pygments==2.21.0
+pytest==9.1.1
+python-dateutil==2.9.0.post0
+python-multipart==0.0.32
+pytz==2026.3.post1
+referencing==0.37.0
+requests==2.34.2
+rpds-py==0.30.0
+setuptools==65.5.0
+six==1.17.0
+sniffio==1.3.1
+starlette==1.7.0
+streamlit==1.64.0
+toml==0.10.2
+tomli==2.4.1
+truststore==0.10.4
+typing_extensions==4.16.0
+typing-inspection==0.4.4
+tzdata==2026.4
+urllib3==2.8.0
+uvicorn==0.53.0
+watchdog==6.0.0
+websockets==16.1.1
+
+[notice] A new release of pip available: 22.3.1 -> 26.2.1
+[notice] To update, run: D:\pyton_projekt\hack-5c60a040-terricon\.venv-judge\Scripts\python.exe -m pip install --upgrade pip
+exit_code=0; seconds=4.31
+
+=== Dependency consistency ===
+No broken requirements found.
+exit_code=0; seconds=3.30
+
+=== python scripts/check_scenario.py ===
+✓ Данные: бюджет 100, 5 районов, 5 направлений: получил (100, 5, 5); ожидал (100, 5, 5)
+✓ База: получил 52.56; ожидал 52.56
+✓ Набор дороже 100 отклонён: получил True; ожидал True
+✓ Пример организаторов: получил 56.54; ожидал 56.54
+✓ Разбор без ключа: сильные стороны, риски, последствия: получил True; ожидал True
+✓ Улучшить: получил 57.21; ожидал 57.21
+✓ Лучший набор: получил 57.24; ожидал 57.24
+✓ Недопустимый набор нельзя утвердить: получил True; ожидал True
+✓ Поручение: не ухудшай воздух в Сарыарке: получил 56.78; ожидал 56.78
+✓ Цена условий: получил 0.46; ожидал 0.46
+✓ Проверяющий сработал дважды: получил 2; ожидал 2
+Итог: 11/11 проверок
+exit_code=0; seconds=9.11
+
+=== python -m pytest -q ===
+........................................................................ [ 72%]
+...........................                                              [100%]
+============================== warnings summary ===============================
+.venv-judge\lib\site-packages\_pytest\cacheprovider.py:469
+  D:\pyton_projekt\hack-5c60a040-terricon\.venv-judge\lib\site-packages\_pytest\cacheprovider.py:469: PytestCacheWarning: cache could not write path D:\pyton_projekt\hack-5c60a040-terricon\.pytest_cache\v\cache\nodeids: [Errno 13] Permission denied: 'D:\\pyton_projekt\\hack-5c60a040-terricon\\.pytest_cache\\v\\cache\\nodeids'
+    config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+99 passed, 1 warning in 78.17s (0:01:18)
+exit_code=0; seconds=81.47
+pytest_counts={"errors": 0, "failures": 0, "skipped": 0, "tests": 99}
+finished_utc=2026-09-23T12:12:28.728338+00:00
+RESULT=PASS
