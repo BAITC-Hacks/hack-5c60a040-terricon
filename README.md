@@ -253,6 +253,10 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
+Если PowerShell отвечает «выполнение сценариев отключено», сначала выполните
+`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` (действует только в этом окне) или активируйте
+окружение в cmd: `.venv\Scripts\activate.bat`.
+
 Или в macOS/Linux:
 
 ```bash

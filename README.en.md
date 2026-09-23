@@ -252,6 +252,10 @@ Activate it in Windows PowerShell:
 .\.venv\Scripts\Activate.ps1
 ```
 
+If PowerShell reports that running scripts is disabled, first run
+`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` (applies to this window only), or activate
+the environment in cmd: `.venv\Scripts\activate.bat`.
+
 Or in macOS/Linux:
 
 ```bash
