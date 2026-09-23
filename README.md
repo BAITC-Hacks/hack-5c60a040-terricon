@@ -177,7 +177,7 @@ docker run --rm -p 8501:8501 akim
 
 - **Claude (Claude Code, Anthropic)** — на ноутбуке Виталия: разбор кейса (`CASE.md`), задания (`TASKS.md`),
   движок `akim/` и тесты, README.
-- **Codex (OpenAI)** — экран `app.py` по заданиям В-1…В-5 из `TASKS.md`.
+- **Codex (OpenAI)** — экран `app.py` по заданиям В-1…В-5 из `TASKS.md`, синхронизация рабочей копии и публикация коммитов.
 
 ## Команда
 
