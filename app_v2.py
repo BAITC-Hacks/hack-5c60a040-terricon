@@ -10,7 +10,9 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 import akim
-from city_view import city_html
+from city_view import ICONS, city_html
+
+DIRECTION_ICONS = {"transport": "🚌", "ecology": "🌳", "social": "🏫", "safety": "🛡️", "services": "🏛️"}
 
 EXAMPLE_PLAN = [
     {"measure": "M7", "district": "Нура"},
@@ -118,12 +120,14 @@ weakest_now = min(base["districts"], key=lambda district: district["d"])["name"]
 
 
 def measure_title(measure_id: str) -> str:
-    return measure_by_id[measure_id]["name"]
+    measure = measure_by_id[measure_id]
+    return f"{DIRECTION_ICONS[measure['direction']]} {measure['name']}"
 
 
 def measure_details(measure_id: str) -> str:
     measure = measure_by_id[measure_id]
-    effects = ", ".join(f"{indicator_name[code].lower()} +{value:g}" for code, value in measure["effects"].items())
+    effects = ", ".join(f"{ICONS[code]} {indicator_name[code].lower()} +{value:g}"
+                        for code, value in measure["effects"].items())
     where = " · для всего города" if measure["scope"] == "city" else ""
     return (f"**Цена {measure['cost']}** · {direction_name[measure['direction']]} · {effects} · "
             f"{quarters(measure['lag'])}{where}")
